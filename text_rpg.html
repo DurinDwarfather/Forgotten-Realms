@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Forgotten Realm - Text RPG</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .game-container {
+            max-width: 800px;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #4a4a6a;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 0 30px rgba(74, 74, 106, 0.5);
+        }
+
+        .title {
+            text-align: center;
+            color: #f39c12;
+            font-size: 2em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+            border: 1px solid #4a4a6a;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-label {
+            color: #95a5a6;
+            font-size: 0.8em;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            color: #3498db;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .game-output {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid #4a4a6a;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+            min-height: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+
+        .game-output::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .game-output::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .game-output::-webkit-scrollbar-thumb {
+            background: #4a4a6a;
+            border-radius: 4px;
+        }
+
+        .narrative {
+            color: #ecf0f1;
+            margin-bottom: 15px;
+            animation: fadeIn 0.5s;
+        }
+
+        .system-message {
+            color: #f39c12;
+            font-style: italic;
+            margin-bottom: 15px;
+        }
+
+        .player-action {
+            color: #2ecc71;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        #playerInput {
+            flex: 1;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid #4a4a6a;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+        }
+
+        #playerInput:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        button {
+            padding: 12px 25px;
+            background: #3498db;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        button:disabled {
+            background: #7f8c8d;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            color: #f39c12;
+            font-style: italic;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .choices {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(52, 152, 219, 0.1);
+            border-left: 3px solid #3498db;
+            border-radius: 3px;
+        }
+
+        .choice-button {
+            display: block;
+            width: 100%;
+            margin: 8px 0;
+            padding: 10px;
+            background: rgba(52, 152, 219, 0.2);
+            border: 1px solid #3498db;
+            color: #3498db;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .choice-button:hover {
+            background: rgba(52, 152, 219, 0.4);
+            transform: translateX(5px);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1 class="title">⚔️ The Forgotten Realm ⚔️</h1>
+        
+        <div class="stats-bar">
+            <div class="stat">
+                <div class="stat-label">HEALTH</div>
+                <div class="stat-value" id="health">100</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">GOLD</div>
+                <div class="stat-value" id="gold">50</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">EXPERIENCE</div>
+                <div class="stat-value" id="experience">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">LEVEL</div>
+                <div class="stat-value" id="level">1</div>
+            </div>
+        </div>
+
+        <div class="game-output" id="gameOutput"></div>
+
+        <div class="input-container">
+            <input 
+                type="text" 
+                id="playerInput" 
+                placeholder="Type your action here..." 
+                autocomplete="off"
+            />
+            <button id="submitBtn" onclick="submitAction()">Submit</button>
+            <button onclick="resetGame()" style="background: #e74c3c;">New Game</button>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        const gameState = {
+            health: 100,
+            gold: 50,
+            experience: 0,
+            level: 1,
+            inventory: [],
+            location: 'village',
+            gameHistory: [],
+            narrativeLog: []
+        };
+
+        let isProcessing = false;
+
+        // Save game state to localStorage
+        function saveGame() {
+            try {
+                localStorage.setItem('forgottenRealmSave', JSON.stringify(gameState));
+                console.log('Game saved successfully');
+            } catch (error) {
+                console.error('Failed to save game:', error);
+            }
+        }
+
+        // Load game state from localStorage
+        function loadGame() {
+            try {
+                const savedGame = localStorage.getItem('forgottenRealmSave');
+                if (savedGame) {
+                    const loadedState = JSON.parse(savedGame);
+                    Object.assign(gameState, loadedState);
+                    return true;
+                }
+            } catch (error) {
+                console.error('Failed to load game:', error);
+            }
+            return false;
+        }
+
+        // Reset game to start new adventure
+        function resetGame() {
+            if (confirm('Are you sure you want to start a new adventure? This will erase your current progress.')) {
+                localStorage.removeItem('forgottenRealmSave');
+                location.reload();
+            }
+        }
+
+        // Initialize game
+        function initGame() {
+            const hasLoadedGame = loadGame();
+            
+            if (hasLoadedGame && gameState.narrativeLog.length > 0) {
+                // Restore previous game
+                addToOutput('system', '=== GAME LOADED ===');
+                addToOutput('system', 'Continuing your adventure...');
+                
+                // Restore narrative log
+                gameState.narrativeLog.forEach(entry => {
+                    addToOutput(entry.type, entry.message);
+                });
+                
+                updateStats();
+                addToOutput('system', 'What will you do next?');
+            } else {
+                // Start new game
+                addToOutput('system', 'Welcome, brave adventurer, to The Forgotten Realm!');
+                addToOutput('narrative', 'You awaken in a small village on the edge of a mysterious forest. The morning sun casts long shadows across the cobblestone streets. You can hear the distant sound of a blacksmith\'s hammer and smell fresh bread from the bakery.');
+                addToOutput('narrative', 'An old woman approaches you with urgency in her eyes. "Please, adventurer! A terrible beast has been terrorizing our village at night. Will you help us?"');
+                addToOutput('system', 'What will you do?');
+            }
+            
+            document.getElementById('playerInput').focus();
+        }
+
+        // Add message to game output
+        function addToOutput(type, message) {
+            const output = document.getElementById('gameOutput');
+            const div = document.createElement('div');
+            div.className = type === 'system' ? 'system-message' : 
+                           type === 'player' ? 'player-action' : 'narrative';
+            div.textContent = message;
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
+            
+            // Save to narrative log (limit to last 20 entries to avoid storage issues)
+            gameState.narrativeLog.push({ type, message });
+            if (gameState.narrativeLog.length > 20) {
+                gameState.narrativeLog.shift();
+            }
+        }
+
+        // Update stats display
+        function updateStats() {
+            document.getElementById('health').textContent = gameState.health;
+            document.getElementById('gold').textContent = gameState.gold;
+            document.getElementById('experience').textContent = gameState.experience;
+            document.getElementById('level').textContent = gameState.level;
+        }
+
+        // Handle player action
+        async function submitAction() {
+            const input = document.getElementById('playerInput');
+            const action = input.value.trim();
+            
+            if (!action || isProcessing) return;
+            
+            isProcessing = true;
+            document.getElementById('submitBtn').disabled = true;
+            
+            // Display player action
+            addToOutput('player', '> ' + action);
+            input.value = '';
+            
+            // Add loading indicator
+            addToOutput('system', 'The story unfolds...');
+            
+            // Generate narrative response
+            await generateResponse(action);
+            
+            isProcessing = false;
+            document.getElementById('submitBtn').disabled = false;
+            input.focus();
+        }
+
+        // Generate AI narrative response
+        async function generateResponse(action) {
+            try {
+                // Build context from game history
+                const context = buildGameContext(action);
+                
+                const response = await fetch("https://api.anthropic.com/v1/messages", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        model: "claude-sonnet-4-20250514",
+                        max_tokens: 1000,
+                        messages: [
+                            {
+                                role: "user",
+                                content: context
+                            }
+                        ],
+                    })
+                });
+
+                const data = await response.json();
+                
+                // Remove loading message
+                const output = document.getElementById('gameOutput');
+                output.removeChild(output.lastChild);
+                
+                if (data.content && data.content[0]) {
+                    const narrativeText = data.content[0].text;
+                    
+                    // Parse the response for game effects
+                    parseGameEffects(narrativeText);
+                    
+                    // Add to game history
+                    gameState.gameHistory.push({
+                        action: action,
+                        response: narrativeText
+                    });
+                    
+                    // Keep only last 5 interactions to manage context
+                    if (gameState.gameHistory.length > 5) {
+                        gameState.gameHistory.shift();
+                    }
+                    
+                    // Display the narrative
+                    addToOutput('narrative', narrativeText);
+                    
+                    // Save game after each action
+                    saveGame();
+                } else {
+                    addToOutput('system', 'The realm seems silent... Try another action.');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                const output = document.getElementById('gameOutput');
+                output.removeChild(output.lastChild);
+                addToOutput('system', 'An error occurred in the fabric of reality. Please try again.');
+            }
+        }
+
+        // Build context for AI
+        function buildGameContext(action) {
+            let context = `You are the narrator of a text-based RPG game called "The Forgotten Realm". The player is on an adventure and you must create engaging, immersive narrative responses to their actions.
+
+Current Game State:
+- Health: ${gameState.health}/100
+- Gold: ${gameState.gold}
+- Experience: ${gameState.experience}
+- Level: ${gameState.level}
+- Location: ${gameState.location}
+- Inventory: ${gameState.inventory.join(', ') || 'empty'}
+
+`;
+
+            // Add recent history
+            if (gameState.gameHistory.length > 0) {
+                context += "Recent events:\n";
+                gameState.gameHistory.forEach(entry => {
+                    context += `Player: ${entry.action}\nNarrative: ${entry.response}\n\n`;
+                });
+            }
+
+            context += `Player's current action: ${action}
+
+Instructions:
+1. Create a vivid, 2-4 paragraph narrative response that directly addresses the player's action
+2. Be creative and engaging, with descriptive details
+3. Present consequences, discoveries, or new situations based on their choice
+4. If appropriate, include combat results, item discoveries, or character interactions
+5. End with a clear situation that prompts the player to make their next decision
+6. If the action involves combat, describe the outcome and any health/gold changes
+7. Keep the tone adventurous and immersive
+8. DO NOT use asterisks for actions or formatting
+9. Write in second person ("You..." not "The player...")
+
+Important: At the end of your response, if there are significant game effects, include them in this format on a new line:
+[GAME_EFFECTS: health=+/-amount, gold=+/-amount, experience=+amount, item=item_name, location=new_location]
+
+For example: [GAME_EFFECTS: health=-15, gold=+30, experience=+50, item=rusty sword]
+
+Write your narrative response:`;
+
+            return context;
+        }
+
+        // Parse and apply game effects from AI response
+        function parseGameEffects(text) {
+            const effectMatch = text.match(/\[GAME_EFFECTS:([^\]]+)\]/);
+            
+            if (effectMatch) {
+                const effects = effectMatch[1];
+                
+                // Parse health changes
+                const healthMatch = effects.match(/health=([+-]\d+)/);
+                if (healthMatch) {
+                    gameState.health = Math.max(0, Math.min(100, gameState.health + parseInt(healthMatch[1])));
+                }
+                
+                // Parse gold changes
+                const goldMatch = effects.match(/gold=([+-]\d+)/);
+                if (goldMatch) {
+                    gameState.gold = Math.max(0, gameState.gold + parseInt(goldMatch[1]));
+                }
+                
+                // Parse experience
+                const expMatch = effects.match(/experience=([+-]\d+)/);
+                if (expMatch) {
+                    gameState.experience += parseInt(expMatch[1]);
+                    // Level up check
+                    if (gameState.experience >= gameState.level * 100) {
+                        gameState.level++;
+                        gameState.health = 100;
+                        addToOutput('system', '🌟 Level Up! You are now level ' + gameState.level + '! Health restored!');
+                    }
+                }
+                
+                // Parse items
+                const itemMatch = effects.match(/item=([^,\]]+)/);
+                if (itemMatch) {
+                    gameState.inventory.push(itemMatch[1].trim());
+                    addToOutput('system', '📦 Acquired: ' + itemMatch[1].trim());
+                }
+                
+                // Parse location
+                const locationMatch = effects.match(/location=([^,\]]+)/);
+                if (locationMatch) {
+                    gameState.location = locationMatch[1].trim();
+                }
+                
+                updateStats();
+                
+                // Save game after stat changes
+                saveGame();
+                
+                // Check for game over
+                if (gameState.health <= 0) {
+                    addToOutput('system', '💀 You have fallen in battle. Your adventure ends here...');
+                    document.getElementById('submitBtn').disabled = true;
+                    document.getElementById('playerInput').disabled = true;
+                }
+            }
+        }
+
+        // Enter key support
+        document.getElementById('playerInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                submitAction();
+            }
+        });
+
+        // Start the game
+        initGame();
+    </script>
+</body>
+</html>
