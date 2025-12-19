@@ -1,0 +1,3133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Forgotten Realm - v1.1</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            overflow-y: auto;
+        }
+
+        .game-container {
+            max-width: 1200px;
+            width: 100%;
+            min-width: 320px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #4a4a6a;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 0 30px rgba(74, 74, 106, 0.5);
+            margin: 20px auto;
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 40px);
+        }
+
+        .title {
+            text-align: center;
+            color: #f39c12;
+            font-size: 2em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+            border: 1px solid #4a4a6a;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-label {
+            color: #95a5a6;
+            font-size: 0.8em;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            color: #3498db;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .game-output {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid #4a4a6a;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+            min-height: 200px;
+            flex: 1;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+
+        .game-output::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .game-output::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .game-output::-webkit-scrollbar-thumb {
+            background: #4a4a6a;
+            border-radius: 4px;
+        }
+
+        .narrative {
+            color: #ecf0f1;
+            margin-bottom: 15px;
+            animation: fadeIn 0.5s;
+        }
+
+        .system-message {
+            color: #f39c12;
+            font-style: italic;
+            margin-bottom: 15px;
+        }
+
+        .player-action {
+            color: #2ecc71;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        #playerInput {
+            flex: 1;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid #4a4a6a;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+        }
+
+        #playerInput:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        button {
+            padding: 12px 25px;
+            background: #3498db;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        button:disabled {
+            background: #7f8c8d;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            color: #f39c12;
+            font-style: italic;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .choices {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(52, 152, 219, 0.1);
+            border-left: 3px solid #3498db;
+            border-radius: 3px;
+        }
+
+        .choice-button {
+            display: block;
+            width: 100%;
+            margin: 8px 0;
+            padding: 10px;
+            background: rgba(52, 152, 219, 0.2);
+            border: 1px solid #3498db;
+            color: #3498db;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .choice-button:hover {
+            background: rgba(52, 152, 219, 0.4);
+            transform: translateX(5px);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            margin: 5% auto;
+            padding: 30px;
+            border: 2px solid #4a4a6a;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 700px;
+            box-shadow: 0 0 50px rgba(74, 74, 106, 0.8);
+        }
+
+        .modal-header {
+            color: #f39c12;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            text-align: center;
+            border-bottom: 1px solid #4a4a6a;
+            padding-bottom: 10px;
+        }
+
+        .verification-grid {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 12px;
+            margin: 20px 0;
+            font-size: 0.9em;
+        }
+
+        .verification-label {
+            color: #95a5a6;
+            font-weight: bold;
+        }
+
+        .verification-value {
+            color: #3498db;
+        }
+
+        .verification-input {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid #4a4a6a;
+            border-radius: 3px;
+            color: #e0e0e0;
+            padding: 5px 10px;
+            font-family: 'Courier New', monospace;
+            width: 100%;
+        }
+
+        .verification-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .modal-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .modal-button.confirm {
+            background: #27ae60;
+            color: white;
+        }
+
+        .modal-button.cancel {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .modal-button:hover {
+            opacity: 0.9;
+        }
+
+        .parse-status {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .parse-status.success {
+            background: rgba(39, 174, 96, 0.2);
+            border: 1px solid #27ae60;
+            color: #27ae60;
+        }
+
+        .parse-status.warning {
+            background: rgba(241, 196, 15, 0.2);
+            border: 1px solid #f1c40f;
+            color: #f1c40f;
+        }
+
+        .dice-roller {
+            margin: 15px 0;
+            padding: 15px;
+            background: rgba(231, 76, 60, 0.1);
+            border: 2px solid #e74c3c;
+            border-radius: 8px;
+            animation: diceAppear 0.3s ease-out;
+        }
+
+        @keyframes diceAppear {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dice-header {
+            color: #e74c3c;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dice-type {
+            font-size: 0.9em;
+            color: #95a5a6;
+        }
+
+        .dice-display {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+
+        .die {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            border: 2px solid #fff;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            animation: diceRoll 0.6s ease-out;
+            position: relative;
+        }
+
+        @keyframes diceRoll {
+            0% { transform: rotateX(0deg) rotateY(0deg); }
+            25% { transform: rotateX(180deg) rotateY(90deg); }
+            50% { transform: rotateX(360deg) rotateY(180deg); }
+            75% { transform: rotateX(540deg) rotateY(270deg); }
+            100% { transform: rotateX(720deg) rotateY(360deg); }
+        }
+
+        .die.d20 {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+        }
+
+        .die.d12 {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+        }
+
+        .die.d10 {
+            background: linear-gradient(135deg, #1abc9c 0%, #16a085 100%);
+        }
+
+        .die.d8 {
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+        }
+
+        .die.d6 {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+
+        .die.d4 {
+            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+        }
+
+        .die.critical {
+            background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+            border-color: #f1c40f;
+            box-shadow: 0 0 20px rgba(241, 196, 15, 0.6);
+        }
+
+        .die.critical-fail {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            border-color: #e74c3c;
+            box-shadow: 0 0 20px rgba(231, 76, 60, 0.6);
+        }
+
+        .die.success {
+            background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+            border-color: #2ecc71;
+        }
+
+        .die.failure {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            border-color: #e74c3c;
+        }
+
+        .die-label {
+            position: absolute;
+            bottom: -18px;
+            font-size: 0.6em;
+            color: #95a5a6;
+        }
+
+        .roll-result {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .roll-total {
+            font-size: 1.3em;
+            color: #2ecc71;
+            font-weight: bold;
+        }
+
+        .roll-breakdown {
+            font-size: 0.85em;
+            color: #95a5a6;
+        }
+
+        .roll-outcome {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+
+        .roll-outcome.success {
+            background: rgba(46, 204, 113, 0.3);
+            color: #2ecc71;
+        }
+
+        .roll-outcome.failure {
+            background: rgba(231, 76, 60, 0.3);
+            color: #e74c3c;
+        }
+
+        .roll-outcome.critical-success {
+            background: rgba(241, 196, 15, 0.3);
+            color: #f1c40f;
+            animation: pulse 1s infinite;
+        }
+
+        .roll-outcome.critical-failure {
+            background: rgba(192, 57, 43, 0.3);
+            color: #c0392b;
+        }
+
+        /* Mobile Responsiveness */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .game-container {
+                padding: 15px;
+                margin: 10px auto;
+            }
+
+            .title {
+                font-size: 1.5em;
+            }
+
+            .stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+                padding: 20px;
+            }
+
+            .dice-display {
+                justify-content: center;
+            }
+
+            .die {
+                width: 45px;
+                height: 45px;
+                font-size: 1.3em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .title {
+                font-size: 1.2em;
+            }
+
+            .stats-bar {
+                font-size: 0.85em;
+            }
+
+            button {
+                font-size: 0.85em;
+                padding: 8px 12px;
+            }
+        }
+
+        .creation-step {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+        }
+
+        .creation-step h3 {
+            color: #f39c12;
+            margin-bottom: 15px;
+        }
+
+        .quick-select-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .quick-select-btn {
+            padding: 12px;
+            background: rgba(52, 152, 219, 0.2);
+            border: 1px solid #3498db;
+            color: #3498db;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .quick-select-btn:hover {
+            background: rgba(52, 152, 219, 0.4);
+            transform: scale(1.05);
+        }
+
+        .quick-select-btn.selected {
+            background: rgba(46, 204, 113, 0.3);
+            border-color: #2ecc71;
+            color: #2ecc71;
+        }
+
+        .api-status {
+            font-size: 0.9em;
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+
+        .api-status.connected {
+            background: rgba(46, 204, 113, 0.3);
+            color: #2ecc71;
+        }
+
+        .api-status.disconnected {
+            background: rgba(231, 76, 60, 0.3);
+            color: #e74c3c;
+        }
+
+        .settings-icon {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(52, 152, 219, 0.3);
+            border: 2px solid #3498db;
+            color: #3498db;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: all 0.3s;
+            z-index: 1001;
+        }
+
+        .settings-icon:hover {
+            background: rgba(52, 152, 219, 0.5);
+            transform: scale(1.1);
+        }
+
+        .api-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            margin-left: 10px;
+        }
+
+        .api-status.connected {
+            background: rgba(46, 204, 113, 0.3);
+            color: #2ecc71;
+            border: 1px solid #2ecc71;
+        }
+
+        .api-status.disconnected {
+            background: rgba(231, 76, 60, 0.3);
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+
+        .info-box {
+            background: rgba(52, 152, 219, 0.1);
+            border: 1px solid #3498db;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            color: #95a5a6;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .info-box a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .info-box a:hover {
+            text-decoration: underline;
+        }
+
+        .home-screen {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .save-slot {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid #4a4a6a;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            position: relative;
+        }
+
+        .save-slot:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #3498db;
+            transform: translateX(5px);
+        }
+
+        .save-slot.empty {
+            border-style: dashed;
+            opacity: 0.6;
+        }
+
+        .save-slot.empty:hover {
+            opacity: 1;
+        }
+
+        .save-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .save-character-info {
+            flex: 1;
+        }
+
+        .save-character-name {
+            font-size: 1.3em;
+            color: #f39c12;
+            font-weight: bold;
+        }
+
+        .save-character-details {
+            color: #95a5a6;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .save-stats {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            font-size: 0.85em;
+        }
+
+        .save-stat {
+            color: #3498db;
+        }
+
+        .save-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .save-btn {
+            padding: 8px 15px;
+            border: 1px solid #4a4a6a;
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #e0e0e0;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            transition: all 0.3s;
+        }
+
+        .save-btn:hover {
+            background: rgba(52, 152, 219, 0.3);
+            border-color: #3498db;
+        }
+
+        .save-btn.delete {
+            color: #e74c3c;
+            border-color: #e74c3c;
+        }
+
+        .save-btn.delete:hover {
+            background: rgba(231, 76, 60, 0.3);
+        }
+
+        .save-btn.download {
+            color: #2ecc71;
+            border-color: #2ecc71;
+        }
+
+        .save-btn.download:hover {
+            background: rgba(46, 204, 113, 0.3);
+        }
+
+        .home-logo {
+            font-size: 2.5em;
+            color: #f39c12;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="settings-icon" onclick="showSettings()" title="API Settings">
+        ⚙️
+    </div>
+    
+    <div class="game-container">
+        <h1 class="title">⚔️ The Forgotten Realm ⚔️</h1>
+        <p style="text-align: center; color: #7f8c8d; font-size: 0.8em; margin-top: -15px; margin-bottom: 20px;">v1.1</p>
+        
+        <div id="characterSheet" style="display: none; margin-bottom: 20px; padding: 15px; background: rgba(243, 156, 18, 0.1); border: 1px solid #f39c12; border-radius: 5px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h3 style="color: #f39c12; margin: 0;">Character Sheet</h3>
+                <button onclick="toggleCharacterSheet()" style="background: transparent; border: 1px solid #f39c12; color: #f39c12; padding: 5px 10px; cursor: pointer; border-radius: 3px; font-size: 0.9em;">
+                    <span id="charSheetToggle">▼ Hide</span>
+                </button>
+            </div>
+            <div id="characterSheetContent">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 0.9em;">
+                    <div><strong>Name:</strong> <span id="charName">-</span></div>
+                    <div><strong>Class:</strong> <span id="charClass">-</span></div>
+                    <div><strong>Race:</strong> <span id="charRace">-</span></div>
+                    <div><strong>Background:</strong> <span id="charBackground">-</span></div>
+                    <div><strong>AC:</strong> <span id="charAC">-</span></div>
+                    <div><strong>Speed:</strong> <span id="charSpeed">-</span></div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; margin-top: 10px; font-size: 0.8em;">
+                    <div style="text-align: center;"><strong>STR</strong><br><span id="charStr">10</span></div>
+                    <div style="text-align: center;"><strong>DEX</strong><br><span id="charDex">10</span></div>
+                    <div style="text-align: center;"><strong>CON</strong><br><span id="charCon">10</span></div>
+                    <div style="text-align: center;"><strong>INT</strong><br><span id="charInt">10</span></div>
+                    <div style="text-align: center;"><strong>WIS</strong><br><span id="charWis">10</span></div>
+                    <div style="text-align: center;"><strong>CHA</strong><br><span id="charCha">10</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat">
+                <div class="stat-label">HEALTH</div>
+                <div class="stat-value" id="health">100</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">GOLD</div>
+                <div class="stat-value" id="gold">50</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">EXPERIENCE</div>
+                <div class="stat-value" id="experience">0</div>
+            </div>
+            <div class="stat">
+                <div class="stat-label">LEVEL</div>
+                <div class="stat-value" id="level">1</div>
+            </div>
+        </div>
+        
+        <div id="characterManagementButtons" style="margin-bottom: 15px; text-align: center; display: none; gap: 8px; flex-wrap: wrap; justify-content: center;">
+            <input type="file" id="characterFileInput" accept=".json,.txt,.md" style="display: none;" onchange="handleCharacterUpload(event)">
+            <button id="uploadCharBtn" onclick="document.getElementById('characterFileInput').click()" style="background: #9b59b6; font-size: 0.9em; padding: 8px 15px;">
+                📋 Upload Character Sheet
+            </button>
+            <button id="clearCharBtn" onclick="clearCharacterSheet()" style="background: #95a5a6; font-size: 0.9em; padding: 8px 15px; display: none;">
+                ✖ Clear Character
+            </button>
+        </div>
+
+        <div style="margin-bottom: 15px; text-align: center;">
+            <button onclick="showManualRollDialog()" style="background: #e74c3c; font-size: 0.9em; padding: 8px 15px;">
+                🎲 Roll Dice
+            </button>
+        </div>
+
+        <div class="game-output" id="gameOutput"></div>
+
+        <div class="input-container">
+            <input 
+                type="text" 
+                id="playerInput" 
+                placeholder="Type your action here..." 
+                autocomplete="off"
+            />
+            <button id="submitBtn" onclick="submitAction()">Submit</button>
+            <button id="resetBtn" onclick="showHomeScreen()" style="background: #95a5a6;">Menu</button>
+        </div>
+        <div style="text-align: center; margin-top: 8px; color: #7f8c8d; font-size: 0.85em;">
+            💡 <strong>Tip:</strong> Start with <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 3px;">Q:</code> or <code style="background: rgba(255,255,255,0.1); padding: 2px 6px; border-radius: 3px;">OOC:</code> to ask clarifying questions
+        </div>
+    </div>
+
+    <!-- Character Verification Modal -->
+    <div id="verificationModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">📋 Verify Character Information</div>
+            <div id="parseStatus" class="parse-status" style="display: none;"></div>
+            <div id="verificationContent"></div>
+            <div class="modal-buttons">
+                <button class="modal-button confirm" onclick="confirmCharacterImport()">✓ Confirm & Import</button>
+                <button class="modal-button cancel" onclick="cancelCharacterImport()">✗ Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Dice Roll Modal -->
+    <div id="diceRollModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">🎲 Roll Dice</div>
+            <div style="margin: 20px 0;">
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; color: #95a5a6; margin-bottom: 5px;">Roll Type:</label>
+                    <select id="rollType" class="verification-input" onchange="updateRollOptions()">
+                        <option value="custom">Custom Roll</option>
+                        <option value="ability">Ability Check</option>
+                        <option value="attack">Attack Roll</option>
+                        <option value="damage">Damage Roll</option>
+                    </select>
+                </div>
+                
+                <div id="abilityRollOptions" style="display: none;">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #95a5a6; margin-bottom: 5px;">Ability:</label>
+                        <select id="abilitySelect" class="verification-input">
+                            <option value="strength">Strength</option>
+                            <option value="dexterity">Dexterity</option>
+                            <option value="constitution">Constitution</option>
+                            <option value="intelligence">Intelligence</option>
+                            <option value="wisdom">Wisdom</option>
+                            <option value="charisma">Charisma</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #95a5a6; margin-bottom: 5px;">Proficient?</label>
+                        <input type="checkbox" id="proficientCheck" style="width: auto;"> Yes
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #95a5a6; margin-bottom: 5px;">Difficulty Class (Optional):</label>
+                        <input type="number" id="dcInput" class="verification-input" placeholder="Leave blank for no DC" min="1" max="30">
+                    </div>
+                </div>
+
+                <div id="customRollOptions" style="display: block;">
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #95a5a6; margin-bottom: 5px;">Dice Notation:</label>
+                        <input type="text" id="diceNotation" class="verification-input" placeholder="e.g., 2d6+3, 1d20, 3d8-2">
+                        <div style="color: #7f8c8d; font-size: 0.8em; margin-top: 5px;">
+                            Examples: 1d20 (d20), 2d6+3 (two d6 plus 3), 3d8-2 (three d8 minus 2)
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; color: #95a5a6; margin-bottom: 5px;">Description (Optional):</label>
+                    <input type="text" id="rollDescription" class="verification-input" placeholder="e.g., 'Attacking goblin' or 'Jumping across gap'">
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-button confirm" onclick="performManualRoll()">🎲 Roll!</button>
+                <button class="modal-button cancel" onclick="closeDiceRollModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Game Confirmation Modal -->
+    <div id="newGameModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">⚠️ Start New Game?</div>
+            <div style="margin: 20px 0; text-align: center;">
+                <p style="color: #e74c3c; font-size: 1.1em; margin-bottom: 10px;">
+                    Are you sure you want to start a new adventure?
+                </p>
+                <p style="color: #95a5a6;">
+                    This will erase your current progress, character, and saved game.
+                </p>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-button confirm" onclick="confirmResetGame()" style="background: #e74c3c;">Yes, Start New Game</button>
+                <button class="modal-button cancel" onclick="closeNewGameModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Character Creation Modal -->
+    <div id="characterCreationModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">⚔️ Create Your Character</div>
+            
+            <div class="creation-step">
+                <h3>Step 1: Upload or Create?</h3>
+                <p style="color: #95a5a6; margin-bottom: 15px;">
+                    Do you have a D&D character sheet to upload, or would you like to create a character now?
+                </p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button class="modal-button confirm" onclick="document.getElementById('characterFileInput').click(); document.getElementById('characterCreationModal').style.display='none';" style="flex: 1;">
+                        📋 Upload Character Sheet
+                    </button>
+                    <button class="modal-button confirm" onclick="showManualCreation()" style="flex: 1; background: #9b59b6;">
+                        ✏️ Create Manually
+                    </button>
+                </div>
+            </div>
+
+            <div id="manualCreationForm" style="display: none;">
+                <div class="creation-step">
+                    <h3>Character Basics</h3>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; color: #95a5a6; margin-bottom: 5px;">Character Name:</label>
+                        <input type="text" id="createName" class="verification-input" placeholder="e.g., Thorin Ironforge">
+                    </div>
+                    
+                    <label style="display: block; color: #95a5a6; margin-bottom: 5px;">Race:</label>
+                    <div class="quick-select-grid">
+                        <button class="quick-select-btn" onclick="selectOption('race', 'Human')">Human</button>
+                        <button class="quick-select-btn" onclick="selectOption('race', 'Elf')">Elf</button>
+                        <button class="quick-select-btn" onclick="selectOption('race', 'Dwarf')">Dwarf</button>
+                        <button class="quick-select-btn" onclick="selectOption('race', 'Halfling')">Halfling</button>
+                        <button class="quick-select-btn" onclick="selectOption('race', 'Dragonborn')">Dragonborn</button>
+                        <button class="quick-select-btn" onclick="selectOption('race', 'Tiefling')">Tiefling</button>
+                    </div>
+                    <input type="text" id="createRace" class="verification-input" placeholder="Or type custom race" style="margin-top: 10px;">
+                    
+                    <label style="display: block; color: #95a5a6; margin: 15px 0 5px 0;">Class:</label>
+                    <div class="quick-select-grid">
+                        <button class="quick-select-btn" onclick="selectOption('class', 'Fighter')">Fighter</button>
+                        <button class="quick-select-btn" onclick="selectOption('class', 'Wizard')">Wizard</button>
+                        <button class="quick-select-btn" onclick="selectOption('class', 'Rogue')">Rogue</button>
+                        <button class="quick-select-btn" onclick="selectOption('class', 'Cleric')">Cleric</button>
+                        <button class="quick-select-btn" onclick="selectOption('class', 'Ranger')">Ranger</button>
+                        <button class="quick-select-btn" onclick="selectOption('class', 'Paladin')">Paladin</button>
+                    </div>
+                    <input type="text" id="createClass" class="verification-input" placeholder="Or type custom class" style="margin-top: 10px;">
+                    
+                    <div style="margin-top: 15px;">
+                        <label style="display: block; color: #95a5a6; margin-bottom: 5px;">Background (Optional):</label>
+                        <input type="text" id="createBackground" class="verification-input" placeholder="e.g., Soldier, Noble, Folk Hero">
+                    </div>
+                </div>
+
+                <div class="modal-buttons">
+                    <button class="modal-button confirm" onclick="finishCharacterCreation()">✓ Start Adventure</button>
+                    <button class="modal-button cancel" onclick="closeCharacterCreation()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" class="modal" style="z-index: 1002;">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">⚠️ Delete Save?</div>
+            <div style="margin: 20px 0; text-align: center;">
+                <p style="color: #e74c3c; font-size: 1.1em; margin-bottom: 10px;">
+                    Are you sure you want to delete this save?
+                </p>
+                <p id="deleteCharacterName" style="color: #f39c12; font-weight: bold; margin: 10px 0;"></p>
+                <p style="color: #95a5a6;">
+                    This action cannot be undone.
+                </p>
+            </div>
+            <div class="modal-buttons">
+                <button class="modal-button confirm" onclick="confirmDelete()" style="background: #e74c3c;">Yes, Delete</button>
+                <button class="modal-button cancel" onclick="cancelDelete()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Home Screen Modal -->
+    <div id="homeScreenModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="home-screen">
+                <div class="home-logo">⚔️ THE FORGOTTEN REALM ⚔️</div>
+                <p style="color: #95a5a6; margin-bottom: 20px;">A D&D Text Adventure</p>
+
+                <!-- API Status Banner -->
+                <div id="homeApiStatus" style="padding: 15px; border-radius: 8px; margin-bottom: 25px; text-align: center;">
+                    <!-- Dynamically filled by JavaScript -->
+                </div>
+
+                <div style="text-align: left;">
+                    <h3 style="color: #f39c12; margin-bottom: 15px;">Your Adventures</h3>
+                    <div id="saveSlotsContainer"></div>
+
+                    <div style="margin-top: 30px; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="modal-button confirm" onclick="startNewGame()" style="flex: 1;">
+                            ✨ New Adventure
+                        </button>
+                        <button class="modal-button confirm" onclick="document.getElementById('saveFileInput').click()" style="flex: 1; background: #9b59b6;">
+                            📂 Load Save File
+                        </button>
+                        <input type="file" id="saveFileInput" accept=".json" style="display: none;" onchange="loadSaveFile(event)">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Settings Modal -->
+    <div id="settingsModal" class="modal" style="z-index: 1001;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">⚙️ API Settings</div>
+            
+            <div class="info-box">
+                <strong>🧠 AI Brain Configuration</strong><br>
+                This game needs an AI "brain" to generate dynamic stories, handle dice rolls, and respond to your actions.
+                You need to provide your own Anthropic API key to power the game.
+            </div>
+
+            <div style="margin: 20px 0;">
+                <h3 style="color: #f39c12; margin-bottom: 10px;">How to Get an API Key:</h3>
+                <ol style="color: #95a5a6; line-height: 1.8; padding-left: 20px;">
+                    <li>Go to <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></li>
+                    <li>Sign up or log in</li>
+                    <li>Navigate to "API Keys" in the dashboard</li>
+                    <li>Click "Create Key" and copy it</li>
+                    <li>Paste it below</li>
+                </ol>
+            </div>
+
+            <div style="margin: 20px 0;">
+                <label style="display: block; color: #95a5a6; margin-bottom: 5px;">
+                    Anthropic API Key:
+                    <span id="apiStatusBadge" class="api-status disconnected">● Not Connected</span>
+                </label>
+                <input 
+                    type="password" 
+                    id="settingsApiKeyInput" 
+                    class="verification-input" 
+                    placeholder="sk-ant-... or sk-..."
+                    style="font-family: monospace;"
+                >
+                <div style="margin-top: 5px;">
+                    <label style="color: #95a5a6; font-size: 0.85em;">
+                        <input type="checkbox" id="showApiKey" onchange="toggleApiKeyVisibility()" style="width: auto;"> 
+                        Show API Key
+                    </label>
+                </div>
+            </div>
+
+            <div class="info-box" style="background: rgba(241, 196, 15, 0.1); border-color: #f1c40f;">
+                <strong>⚠️ Important:</strong><br>
+                • Your API key is stored locally in your browser only<br>
+                • Never share your API key with others<br>
+                • API usage may incur costs based on Anthropic's pricing<br>
+                • You can revoke keys anytime from the Anthropic console
+            </div>
+
+            <div style="margin: 20px 0;">
+                <button class="modal-button" onclick="testApiConnection()" style="background: #3498db; width: 100%;">
+                    🔌 Test Connection
+                </button>
+            </div>
+
+            <div id="apiTestResult" style="display: none; margin: 15px 0; padding: 10px; border-radius: 5px;"></div>
+
+            <div class="modal-buttons">
+                <button class="modal-button confirm" onclick="saveApiSettings()">✓ Save Settings</button>
+                <button class="modal-button cancel" onclick="closeSettings()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        const gameState = {
+            health: 100,
+            gold: 50,
+            experience: 0,
+            level: 1,
+            inventory: [],
+            location: 'village',
+            gameHistory: [],
+            narrativeLog: [],
+            character: null,
+            apiKey: null
+        };
+
+        let isProcessing = false;
+        let pendingCharacterData = null;
+        let selectedOptions = { race: null, class: null };
+
+        // Show/hide character management buttons
+        function showCharacterManagementButtons() {
+            console.log('showCharacterManagementButtons called');
+            document.getElementById('characterManagementButtons').style.display = 'flex';
+        }
+
+        function hideCharacterManagementButtons() {
+            console.log('hideCharacterManagementButtons called');
+            document.getElementById('characterManagementButtons').style.display = 'none';
+        }
+
+        // API Key Management
+        function loadApiKey() {
+            const savedKey = localStorage.getItem('anthropicApiKey');
+            if (savedKey) {
+                gameState.apiKey = savedKey;
+            }
+        }
+
+        function checkApiKey() {
+            if (!gameState.apiKey) {
+                addToOutput('system', '⚠️ No API key configured. Please click the ⚙️ gear icon (top right) to enter your Anthropic API key.');
+                return false;
+            }
+            return true;
+        }
+
+        let currentSaveSlot = null;
+
+        // API Settings Functions
+        function showSettings() {
+            document.getElementById('settingsModal').style.display = 'block';
+            document.getElementById('settingsApiKeyInput').value = gameState.apiKey || '';
+            updateApiStatus();
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function toggleApiKeyVisibility() {
+            const input = document.getElementById('settingsApiKeyInput');
+            const checkbox = document.getElementById('showApiKey');
+            input.type = checkbox.checked ? 'text' : 'password';
+        }
+
+        function updateApiStatus() {
+            const badge = document.getElementById('apiStatusBadge');
+            if (gameState.apiKey && gameState.apiKey.startsWith('sk-')) {
+                badge.className = 'api-status connected';
+                badge.textContent = '● Connected';
+            } else {
+                badge.className = 'api-status disconnected';
+                badge.textContent = '● Not Connected';
+            }
+        }
+
+        async function testApiConnection() {
+            const testKey = document.getElementById('settingsApiKeyInput').value.trim();
+            const resultDiv = document.getElementById('apiTestResult');
+            
+            if (!testKey) {
+                resultDiv.style.display = 'block';
+                resultDiv.style.background = 'rgba(231, 76, 60, 0.2)';
+                resultDiv.style.border = '1px solid #e74c3c';
+                resultDiv.style.color = '#e74c3c';
+                resultDiv.textContent = '❌ Please enter an API key first';
+                return;
+            }
+
+            resultDiv.style.display = 'block';
+            resultDiv.style.background = 'rgba(52, 152, 219, 0.2)';
+            resultDiv.style.border = '1px solid #3498db';
+            resultDiv.style.color = '#3498db';
+            resultDiv.textContent = '🔄 Testing connection...';
+
+            try {
+                const response = await fetch("https://api.anthropic.com/v1/messages", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-api-key": testKey,
+                        "anthropic-version": "2023-06-01"
+                    },
+                    body: JSON.stringify({
+                        model: "claude-sonnet-4-20250514",
+                        max_tokens: 10,
+                        messages: [{ role: "user", content: "test" }]
+                    })
+                });
+
+                if (response.ok) {
+                    resultDiv.style.background = 'rgba(46, 204, 113, 0.2)';
+                    resultDiv.style.border = '1px solid #2ecc71';
+                    resultDiv.style.color = '#2ecc71';
+                    resultDiv.textContent = '✅ Connection successful! API key is valid.';
+                } else {
+                    const error = await response.json();
+                    resultDiv.style.background = 'rgba(231, 76, 60, 0.2)';
+                    resultDiv.style.border = '1px solid #e74c3c';
+                    resultDiv.style.color = '#e74c3c';
+                    resultDiv.textContent = `❌ Connection failed: ${error.error?.message || 'Invalid API key'}`;
+                }
+            } catch (error) {
+                resultDiv.style.background = 'rgba(231, 76, 60, 0.2)';
+                resultDiv.style.border = '1px solid #e74c3c';
+                resultDiv.style.color = '#e74c3c';
+                resultDiv.textContent = `❌ Error: ${error.message}`;
+            }
+        }
+
+        function saveApiSettings() {
+            const newKey = document.getElementById('settingsApiKeyInput').value.trim();
+            
+            if (!newKey) {
+                alert('Please enter an API key');
+                return;
+            }
+
+            if (!newKey.startsWith('sk-')) {
+                alert('API key should start with "sk-"');
+                return;
+            }
+
+            if (newKey.length < 40) {
+                alert('API key seems too short. Please check that you copied the entire key.');
+                return;
+            }
+
+            // Save using the unified system
+            gameState.apiKey = newKey;
+            localStorage.setItem('anthropicApiKey', newKey);
+            updateApiStatus();
+            closeSettings();
+            
+            addToOutput('system', '✅ API settings saved successfully!');
+        }
+
+        // Save slot management
+        function getSaveSlots() {
+            const slots = localStorage.getItem('forgottenRealmSaveSlots');
+            return slots ? JSON.parse(slots) : [];
+        }
+
+        function saveSaveSlots(slots) {
+            localStorage.setItem('forgottenRealmSaveSlots', JSON.stringify(slots));
+        }
+
+        function saveToSlot(slotId) {
+            const slots = getSaveSlots();
+            const saveData = {
+                slotId: slotId,
+                timestamp: new Date().toISOString(),
+                gameState: gameState
+            };
+            
+            // Find and update or add new slot
+            const existingIndex = slots.findIndex(s => s.slotId === slotId);
+            if (existingIndex >= 0) {
+                slots[existingIndex] = saveData;
+            } else {
+                slots.push(saveData);
+            }
+            
+            saveSaveSlots(slots);
+            currentSaveSlot = slotId;
+        }
+
+        function loadFromSlot(slotId) {
+            const slots = getSaveSlots();
+            const saveData = slots.find(s => s.slotId === slotId);
+            
+            if (saveData) {
+                Object.assign(gameState, saveData.gameState);
+                currentSaveSlot = slotId;
+                
+                // Update UI
+                document.getElementById('gameOutput').innerHTML = '';
+                if (gameState.character) {
+                    displayCharacterSheet(gameState.character);
+                }
+                
+                // Hide character management buttons when loading existing game
+                hideCharacterManagementButtons();
+                
+                // Add welcome back message
+                addToOutput('system', '=== ADVENTURE LOADED ===');
+                if (gameState.character) {
+                    addToOutput('system', `Welcome back, ${gameState.character.name}!`);
+                }
+                
+                // Restore narrative (show last 20 messages for context)
+                if (gameState.narrativeLog && gameState.narrativeLog.length > 0) {
+                    const startIndex = Math.max(0, gameState.narrativeLog.length - 20);
+                    if (startIndex > 0) {
+                        addToOutput('system', `... (${startIndex} earlier messages hidden)`);
+                    }
+                    gameState.narrativeLog.slice(startIndex).forEach(entry => {
+                        addToOutput(entry.type, entry.message);
+                    });
+                } else {
+                    addToOutput('system', 'Adventure loaded!');
+                }
+                
+                addToOutput('system', 'What will you do next?');
+                
+                updateStats();
+                document.getElementById('homeScreenModal').style.display = 'none';
+                document.getElementById('playerInput').focus();
+            }
+        }
+
+        let pendingDeleteSlotId = null;
+
+        function deleteSlot(slotId) {
+            console.log('deleteSlot called with slotId:', slotId);
+            
+            // Store the slot ID for later confirmation
+            pendingDeleteSlotId = slotId;
+            
+            // Get character name for display
+            const slots = getSaveSlots();
+            const saveData = slots.find(s => s.slotId === slotId);
+            const characterName = saveData?.gameState?.character?.name || 'Unknown Adventurer';
+            
+            // Show custom confirmation modal
+            document.getElementById('deleteCharacterName').textContent = characterName;
+            document.getElementById('deleteConfirmModal').style.display = 'block';
+        }
+
+        function confirmDelete() {
+            console.log('User confirmed deletion');
+            if (pendingDeleteSlotId) {
+                let slots = getSaveSlots();
+                console.log('Current slots before delete:', slots.length);
+                slots = slots.filter(s => s.slotId !== pendingDeleteSlotId);
+                console.log('Slots after filter:', slots.length);
+                saveSaveSlots(slots);
+                renderSaveSlots();
+                console.log('Save slots rendered');
+                
+                // Close modal and reset
+                document.getElementById('deleteConfirmModal').style.display = 'none';
+                pendingDeleteSlotId = null;
+            }
+        }
+
+        function cancelDelete() {
+            console.log('User cancelled deletion');
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+            pendingDeleteSlotId = null;
+        }
+
+        function downloadSlot(slotId) {
+            const slots = getSaveSlots();
+            const saveData = slots.find(s => s.slotId === slotId);
+            
+            if (saveData) {
+                const characterName = saveData.gameState.character?.name || 'Unknown';
+                const filename = `${characterName.replace(/\s+/g, '_')}_Level${saveData.gameState.level}_Save.json`;
+                
+                const dataStr = JSON.stringify(saveData, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                link.click();
+                
+                URL.revokeObjectURL(url);
+            }
+        }
+
+        function loadSaveFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const saveData = JSON.parse(e.target.result);
+                    
+                    // Validate save data
+                    if (!saveData.gameState || !saveData.slotId) {
+                        alert('Invalid save file format');
+                        return;
+                    }
+                    
+                    // Generate new slot ID to avoid conflicts
+                    const newSlotId = 'slot_' + Date.now();
+                    saveData.slotId = newSlotId;
+                    saveData.timestamp = new Date().toISOString();
+                    
+                    // Add to slots
+                    const slots = getSaveSlots();
+                    slots.push(saveData);
+                    saveSaveSlots(slots);
+                    
+                    // Load the save
+                    loadFromSlot(newSlotId);
+                    
+                } catch (error) {
+                    alert('Error loading save file: ' + error.message);
+                    console.error('Load error:', error);
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+
+        function renderSaveSlots() {
+            const container = document.getElementById('saveSlotsContainer');
+            const slots = getSaveSlots();
+            
+            if (slots.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #95a5a6; padding: 20px;">No saved adventures yet. Start a new game to begin!</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            slots.forEach(save => {
+                const character = save.gameState.character;
+                const characterName = character?.name || 'Unknown Adventurer';
+                const characterRace = character?.race || 'Unknown';
+                const characterClass = character?.class || 'Adventurer';
+                const level = save.gameState.level || 1;
+                const health = save.gameState.health || 0;
+                const gold = save.gameState.gold || 0;
+                const experience = save.gameState.experience || 0;
+                
+                const date = new Date(save.timestamp);
+                const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                
+                const slotDiv = document.createElement('div');
+                slotDiv.className = 'save-slot';
+                slotDiv.innerHTML = `
+                    <div class="save-info">
+                        <div class="save-character-info" onclick="loadFromSlot('${save.slotId}')">
+                            <div class="save-character-name">${characterName}</div>
+                            <div class="save-character-details">
+                                ${characterRace} ${characterClass} • Level ${level}
+                            </div>
+                            <div class="save-stats">
+                                <span class="save-stat">❤️ ${health} HP</span>
+                                <span class="save-stat">💰 ${gold} Gold</span>
+                                <span class="save-stat">⭐ ${experience} XP</span>
+                            </div>
+                            <div style="color: #7f8c8d; font-size: 0.75em; margin-top: 8px;">
+                                Last played: ${dateStr}
+                            </div>
+                        </div>
+                        <div class="save-actions" onclick="event.stopPropagation()">
+                            <button class="save-btn download" onclick="event.stopPropagation(); downloadSlot('${save.slotId}')" title="Download Save">
+                                💾 Save
+                            </button>
+                            <button class="save-btn delete" onclick="event.stopPropagation(); deleteSlot('${save.slotId}')" title="Delete">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(slotDiv);
+            });
+        }
+
+        function showHomeScreen() {
+            renderSaveSlots();
+            
+            // Update API status banner
+            const apiStatusBanner = document.getElementById('homeApiStatus');
+            if (!gameState.apiKey) {
+                apiStatusBanner.style.background = 'rgba(231, 76, 60, 0.2)';
+                apiStatusBanner.style.border = '2px solid #e74c3c';
+                apiStatusBanner.innerHTML = `
+                    <div style="color: #e74c3c; font-size: 1.1em; margin-bottom: 10px;">
+                        <strong>⚠️ API Key Required</strong>
+                    </div>
+                    <p style="color: #ecf0f1; margin: 10px 0; font-size: 0.95em;">
+                        This game uses Claude AI to generate dynamic stories.<br>
+                        You need an Anthropic API key to play.
+                    </p>
+                    <button onclick="showSettings()" style="background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 1em; margin-top: 5px;">
+                        ⚙️ Set Up API Key
+                    </button>
+                `;
+            } else {
+                apiStatusBanner.style.background = 'rgba(46, 204, 113, 0.2)';
+                apiStatusBanner.style.border = '2px solid #2ecc71';
+                apiStatusBanner.innerHTML = `
+                    <div style="color: #2ecc71; font-size: 1em;">
+                        ✓ API Key Configured - Ready to Play!
+                    </div>
+                    <button onclick="showSettings()" style="background: transparent; color: #3498db; border: 1px solid #3498db; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 0.9em; margin-top: 8px;">
+                        ⚙️ Manage Settings
+                    </button>
+                `;
+            }
+            
+            document.getElementById('homeScreenModal').style.display = 'block';
+        }
+
+        function startNewGame() {
+            document.getElementById('homeScreenModal').style.display = 'none';
+            
+            // Clear current game
+            gameState.health = 100;
+            gameState.gold = 50;
+            gameState.experience = 0;
+            gameState.level = 1;
+            gameState.inventory = [];
+            gameState.location = 'village';
+            gameState.gameHistory = [];
+            gameState.narrativeLog = [];
+            gameState.character = null;
+            currentSaveSlot = null;
+            
+            // Clear UI
+            document.getElementById('gameOutput').innerHTML = '';
+            document.getElementById('characterSheet').style.display = 'none';
+            document.getElementById('clearCharBtn').style.display = 'none';
+            updateStats();
+            
+            // Show character management buttons for new game
+            showCharacterManagementButtons();
+            
+            // Show character creation
+            addToOutput('system', '=== NEW GAME ===');
+            addToOutput('system', 'Welcome, brave adventurer, to The Forgotten Realm!');
+            showCharacterCreation();
+        }
+
+        // Character creation functions
+        function showCharacterCreation() {
+            document.getElementById('characterCreationModal').style.display = 'block';
+            document.getElementById('manualCreationForm').style.display = 'none';
+        }
+
+        function showManualCreation() {
+            document.getElementById('manualCreationForm').style.display = 'block';
+            // Clear previous selections
+            selectedOptions = { race: null, class: null };
+            document.querySelectorAll('.quick-select-btn').forEach(btn => btn.classList.remove('selected'));
+            document.getElementById('createName').value = '';
+            document.getElementById('createRace').value = '';
+            document.getElementById('createClass').value = '';
+            document.getElementById('createBackground').value = '';
+        }
+
+        function selectOption(type, value) {
+            // Update selected option
+            selectedOptions[type] = value;
+            
+            // Update button styling
+            const buttons = document.querySelectorAll(`.quick-select-btn`);
+            buttons.forEach(btn => {
+                if (btn.textContent === value) {
+                    btn.classList.add('selected');
+                } else if (btn.onclick && btn.onclick.toString().includes(`'${type}'`)) {
+                    btn.classList.remove('selected');
+                }
+            });
+            
+            // Update input field
+            if (type === 'race') {
+                document.getElementById('createRace').value = value;
+            } else if (type === 'class') {
+                document.getElementById('createClass').value = value;
+            }
+        }
+
+        function closeCharacterCreation() {
+            document.getElementById('characterCreationModal').style.display = 'none';
+            // If no character exists, show a message
+            if (!gameState.character) {
+                addToOutput('system', 'Character creation cancelled. Click "📋 Upload Character Sheet" to try again or type your action to begin with default stats.');
+            }
+        }
+
+        function finishCharacterCreation() {
+            const name = document.getElementById('createName').value.trim();
+            const race = document.getElementById('createRace').value.trim() || selectedOptions.race;
+            const charClass = document.getElementById('createClass').value.trim() || selectedOptions.class;
+            const background = document.getElementById('createBackground').value.trim();
+
+            if (!name) {
+                alert('Please enter a character name');
+                return;
+            }
+
+            if (!race) {
+                alert('Please select or enter a race');
+                return;
+            }
+
+            if (!charClass) {
+                alert('Please select or enter a class');
+                return;
+            }
+
+            // Create basic character
+            const newCharacter = {
+                name: name,
+                race: race,
+                class: charClass,
+                level: 1,
+                background: background || 'Adventurer',
+                abilities: {
+                    strength: 10,
+                    dexterity: 10,
+                    constitution: 10,
+                    intelligence: 10,
+                    wisdom: 10,
+                    charisma: 10
+                },
+                hitPoints: { current: 10, max: 10 },
+                armorClass: 10,
+                speed: 30,
+                proficiencyBonus: 2,
+                skills: [],
+                equipment: [],
+                features: []
+            };
+
+            // Adjust stats based on class
+            switch(charClass.toLowerCase()) {
+                case 'fighter':
+                    newCharacter.abilities.strength = 15;
+                    newCharacter.abilities.constitution = 14;
+                    newCharacter.hitPoints = { current: 12, max: 12 };
+                    break;
+                case 'wizard':
+                    newCharacter.abilities.intelligence = 15;
+                    newCharacter.abilities.wisdom = 13;
+                    break;
+                case 'rogue':
+                    newCharacter.abilities.dexterity = 15;
+                    newCharacter.abilities.charisma = 13;
+                    break;
+                case 'cleric':
+                    newCharacter.abilities.wisdom = 15;
+                    newCharacter.abilities.constitution = 13;
+                    break;
+                case 'ranger':
+                    newCharacter.abilities.dexterity = 14;
+                    newCharacter.abilities.wisdom = 14;
+                    break;
+                case 'paladin':
+                    newCharacter.abilities.strength = 15;
+                    newCharacter.abilities.charisma = 13;
+                    break;
+            }
+
+            // Adjust stats based on race
+            switch(race.toLowerCase()) {
+                case 'dwarf':
+                    newCharacter.abilities.constitution += 2;
+                    newCharacter.speed = 25;
+                    break;
+                case 'elf':
+                    newCharacter.abilities.dexterity += 2;
+                    break;
+                case 'halfling':
+                    newCharacter.abilities.dexterity += 2;
+                    newCharacter.speed = 25;
+                    break;
+                case 'human':
+                    // +1 to all stats
+                    Object.keys(newCharacter.abilities).forEach(key => newCharacter.abilities[key] += 1);
+                    break;
+                case 'dragonborn':
+                    newCharacter.abilities.strength += 2;
+                    newCharacter.abilities.charisma += 1;
+                    break;
+                case 'tiefling':
+                    newCharacter.abilities.charisma += 2;
+                    newCharacter.abilities.intelligence += 1;
+                    break;
+            }
+
+            // Recalculate HP based on constitution
+            const conMod = Math.floor((newCharacter.abilities.constitution - 10) / 2);
+            newCharacter.hitPoints.max = 10 + conMod;
+            newCharacter.hitPoints.current = newCharacter.hitPoints.max;
+
+            // Close modal and load character
+            document.getElementById('characterCreationModal').style.display = 'none';
+            loadCharacterSheet(newCharacter);
+            
+            // Generate personalized intro
+            generatePersonalizedIntro(newCharacter);
+        }
+
+        // Generate personalized introduction
+        async function generatePersonalizedIntro(character) {
+            console.log('=== generatePersonalizedIntro called ===');
+            console.log('Character:', character);
+            console.log('API Key present:', !!gameState.apiKey);
+            console.log('API Key length:', gameState.apiKey ? gameState.apiKey.length : 0);
+            
+            addToOutput('system', 'Generating your unique adventure...');
+            
+            // Check if API key exists
+            if (!gameState.apiKey) {
+                console.log('No API key - using local intro immediately');
+                const output = document.getElementById('gameOutput');
+                if (output.lastChild && output.lastChild.textContent.includes('Generating')) {
+                    output.removeChild(output.lastChild);
+                }
+                
+                const personalizedIntro = generateLocalIntro(character);
+                addToOutput('system', '=== YOUR ADVENTURE BEGINS ===');
+                addToOutput('narrative', personalizedIntro);
+                addToOutput('system', 'What will you do?');
+                hideCharacterManagementButtons();
+                saveGame();
+                return;
+            }
+            
+            try {
+                console.log('Attempting API call...');
+                const prompt = `You are the Game Master of "The Forgotten Realm," a D&D text adventure inspired by Critical Role's storytelling style.
+
+Create a unique, personalized opening scene for this character:
+
+Character: ${character.name}, a ${character.race} ${character.class}
+Background: ${character.background}
+
+REQUIREMENTS:
+1. Write 2-3 paragraphs that introduce ${character.name} in a creative, unexpected starting scenario
+2. NO generic openings (no village elder with a quest, no standard tavern start)
+3. Match the scenario to their race, class, and background - make it personal
+4. Include vivid sensory details (sights, sounds, smells) that set the atmosphere
+5. Write in second person ("You..." addressing the player)
+6. End with a compelling hook - a situation that demands their attention
+7. The tone should be immersive and atmospheric, but leave room for the player's personality to emerge
+
+OPENING SCENARIO IDEAS (be creative, don't copy these exactly):
+- In the middle of something going wrong (a heist, a battle, a ritual)
+- Waking up in an unusual place with missing memories
+- Intercepting a mysterious message or discovering something you shouldn't
+- A personal connection bringing you to a dangerous location
+- An unexpected reunion or betrayal
+- Caught between two factions making conflicting demands
+
+Make it feel like episode 1 of a D&D actual play - atmospheric, personal, and immediately engaging.
+
+Write the opening scene for ${character.name}:`;
+
+                const response = await fetch("https://api.anthropic.com/v1/messages", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-api-key": gameState.apiKey,
+                        "anthropic-version": "2023-06-01"
+                    },
+                    body: JSON.stringify({
+                        model: "claude-sonnet-4-20250514",
+                        max_tokens: 500,
+                        messages: [{ role: "user", content: prompt }],
+                    })
+                });
+
+                console.log('API Response status:', response.status);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('API Error:', errorData);
+                    throw new Error(`API request failed: ${response.status} - ${JSON.stringify(errorData)}`);
+                }
+
+                const data = await response.json();
+                console.log('API Response received successfully');
+                
+                // Remove the "generating" message
+                const output = document.getElementById('gameOutput');
+                if (output.lastChild && output.lastChild.textContent.includes('Generating')) {
+                    output.removeChild(output.lastChild);
+                }
+                
+                if (data.content && data.content[0]) {
+                    console.log('Displaying AI-generated intro');
+                    addToOutput('system', '=== YOUR ADVENTURE BEGINS ===');
+                    addToOutput('narrative', data.content[0].text);
+                    addToOutput('system', 'What will you do?');
+                    
+                    // Hide character management buttons - adventure has started
+                    hideCharacterManagementButtons();
+                } else {
+                    throw new Error('No content in response');
+                }
+                
+                saveGame();
+                
+            } catch (error) {
+                console.error('Error generating intro:', error);
+                console.log('Falling back to local intro');
+                
+                // Remove the "generating" message
+                const output = document.getElementById('gameOutput');
+                if (output.lastChild && output.lastChild.textContent.includes('Generating')) {
+                    output.removeChild(output.lastChild);
+                }
+                
+                // Use predefined personalized intro based on character
+                const personalizedIntro = generateLocalIntro(character);
+                addToOutput('system', '=== YOUR ADVENTURE BEGINS ===');
+                addToOutput('narrative', personalizedIntro);
+                addToOutput('system', 'What will you do?');
+                
+                // Hide character management buttons - adventure has started
+                hideCharacterManagementButtons();
+                
+                saveGame();
+            }
+        }
+
+        // Generate personalized intro locally (fallback)
+        function generateLocalIntro(character) {
+            const intros = {
+                'Fighter': [
+                    `${character.name}, your fists are still sore from yesterday's training. The morning light filters through the barracks window as a messenger bursts through the door. "The caravan! Bandits on the north road!" Your commanding officer looks directly at you. "This is your chance to prove yourself."`,
+                    `The tavern brawl last night got out of hand. Now ${character.name} stands before the town magistrate. "I'll drop the charges," he says with a sly grin, "if you deal with the goblin problem in the old mill." Your reputation precedes you—both as a fighter and a troublemaker.`,
+                    `${character.name}, the tournament bracket has just been posted. You're matched against "The Iron Fist"—undefeated in twenty bouts. The crowd gathers, placing bets and shouting. But something's wrong. Your opponent hasn't shown up, and there's blood on the arena floor.`
+                ],
+                'Wizard': [
+                    `Your master's tower smells of burnt parchment and ozone. ${character.name}, you've been studying for weeks, but the spell still won't work. Then you notice it—a hidden compartment in your master's desk, and inside, a journal with today's date written fifty years ago. It contains your name.`,
+                    `${character.name} wakes to find the entire magic academy frozen in time—everyone except you. Students stand mid-laugh, professors frozen mid-spell. A note on your desk reads: "You have until sunset to reverse this, or it becomes permanent. Follow the blue raven."`,
+                    `The experiment worked too well. ${character.name}, you've successfully summoned... something. It's not hostile, just confused. And very, very powerful. It keeps asking you questions about "the old gods" and "the before-time," and you have no idea what it means.`
+                ],
+                'Rogue': [
+                    `${character.name}, the job was supposed to be simple: steal the merchant's ledger, leave no trace. But the ledger contains names—nobles, guards, even the royal family. Someone knew you'd read it. Someone wanted you to know. Now there's a price on your head.`,
+                    `You wake in a cell. ${character.name} doesn't remember how you got here, but your lockpicks are still hidden in your boot, and the guard is asleep. Through the window, you spot your gear being loaded onto a wagon. They're moving you at dawn.`,
+                    `The Thieves' Guild master offers ${character.name} a choice: rob the Duke's manor during his feast tonight, or be cast out and hunted. There's just one problem—you've been invited to that feast as a guest. Someone knows your secret.`
+                ],
+                'Cleric': [
+                    `${character.name}, your deity has gone silent. For three days, no prayers answered, no divine guidance. The temple elders are worried. Then this morning, you wake to find a symbol burned into your palm—not your god's symbol. Another deity is calling.`,
+                    `The plague struck overnight. ${character.name}, as the only healer in the village, you've been overwhelmed with patients. But this isn't natural—the sick speak in unison, repeating the same cryptic phrase. Whatever this is, healing won't stop it.`,
+                    `${character.name} discovers the high priest murdered in the sanctuary. His dying message, written in blood: "The prophecy was wrong. It's not the hero who will save us—it's the heretic." Your hands glow with divine power as guards burst through the door.`
+                ],
+                'Ranger': [
+                    `${character.name}, you've tracked these bandits for three days into unknown territory. The trail ends at an ancient ruin, but the tracks continue *through* a solid wall. Your animal companion refuses to go near it, whining and pulling back.`,
+                    `The forest ${character.name} grew up in is dying. Not the natural death of autumn, but something wrong—trees rotting from within, animals fleeing in droves. At the heart of the forest, you find a stone monument that wasn't there yesterday.`,
+                    `${character.name} wakes to find your camp surrounded by wolves. But they're not attacking—they're protecting you. In the distance, something massive moves between the trees. The wolves look terrified.`
+                ],
+                'Paladin': [
+                    `${character.name}, the holy sword chose you, but now it won't stop whispering. It wants blood. Your order insists the weapon is blessed, but you've researched its history—every previous bearer went mad or vanished. Tonight, it spoke a name: yours.`,
+                    `The dragon offered ${character.name} a deal: spare its life, and it will reveal which member of your order betrayed the kingdom. Your oath demands you strike it down. The dragon's eyes seem almost... hopeful.`,
+                    `${character.name} stands before the corrupt noble you have hunted for months. He is guilty, you have proof. But as you raise your weapon, a child runs between you. "Please do not hurt my father," she sobs. Your oath demands justice.`
+                ]
+            };
+
+            // Get intros for this class, or use generic ones
+            const classIntros = intros[character.class] || [
+                `${character.name}, a ${character.race} ${character.class}, finds themselves at a crossroads. Three paths stretch before you: one leads to a distant city, one descends into dark woods, and one climbs toward mountain peaks. A weathered signpost warns: "Choose carefully—only one path remains safe."`,
+                `The letter arrived this morning. ${character.name}, you don't recognize the handwriting, but it knows things about you no one should. It contains a map, a date (today), and a single instruction: "Come alone. They're watching."`,
+                `${character.name} wakes to discover your hometown is different. The buildings are the same, the people look familiar, but no one recognizes you. They speak of a hero named ${character.name}... who died ten years ago.`
+            ];
+
+            // Pick a random intro
+            return classIntros[Math.floor(Math.random() * classIntros.length)];
+        }
+
+        // Dice Rolling System
+        const DiceRoller = {
+            // Roll a single die
+            roll(sides) {
+                return Math.floor(Math.random() * sides) + 1;
+            },
+
+            // Roll multiple dice
+            rollMultiple(count, sides) {
+                const rolls = [];
+                for (let i = 0; i < count; i++) {
+                    rolls.push(this.roll(sides));
+                }
+                return rolls;
+            },
+
+            // Parse dice notation (e.g., "2d6+3", "1d20", "3d8-2")
+            parseDiceNotation(notation) {
+                const match = notation.match(/(\d+)d(\d+)([+-]\d+)?/i);
+                if (!match) return null;
+
+                return {
+                    count: parseInt(match[1]),
+                    sides: parseInt(match[2]),
+                    modifier: match[3] ? parseInt(match[3]) : 0
+                };
+            },
+
+            // Roll with notation
+            rollNotation(notation) {
+                const parsed = this.parseDiceNotation(notation);
+                if (!parsed) return null;
+
+                const rolls = this.rollMultiple(parsed.count, parsed.sides);
+                const sum = rolls.reduce((a, b) => a + b, 0);
+                const total = sum + parsed.modifier;
+
+                return {
+                    rolls,
+                    modifier: parsed.modifier,
+                    sum,
+                    total,
+                    notation
+                };
+            },
+
+            // Roll a D&D ability check
+            abilityCheck(abilityScore, proficient = false, proficiencyBonus = 2) {
+                const modifier = Math.floor((abilityScore - 10) / 2);
+                const totalModifier = modifier + (proficient ? proficiencyBonus : 0);
+                const roll = this.roll(20);
+                const total = roll + totalModifier;
+
+                return {
+                    roll,
+                    modifier: totalModifier,
+                    total,
+                    isCritical: roll === 20,
+                    isCriticalFail: roll === 1,
+                    breakdown: `1d20(${roll}) + ${totalModifier}`
+                };
+            },
+
+            // Roll a D&D saving throw
+            savingThrow(abilityScore, proficient = false, proficiencyBonus = 2) {
+                return this.abilityCheck(abilityScore, proficient, proficiencyBonus);
+            },
+
+            // Display dice roll in the UI
+            displayRoll(rollData, checkType = null, dc = null) {
+                const output = document.getElementById('gameOutput');
+                const diceDiv = document.createElement('div');
+                diceDiv.className = 'dice-roller';
+
+                let headerText = '🎲 Dice Roll';
+                if (checkType) {
+                    headerText = `🎲 ${checkType}`;
+                }
+
+                const dcText = dc ? ` (DC ${dc})` : '';
+                
+                let html = `
+                    <div class="dice-header">
+                        <span>${headerText}${dcText}</span>
+                        <span class="dice-type">${rollData.notation || 'Custom Roll'}</span>
+                    </div>
+                    <div class="dice-display">
+                `;
+
+                // Display individual dice
+                if (rollData.rolls) {
+                    rollData.rolls.forEach((value, idx) => {
+                        const sides = rollData.notation ? parseInt(rollData.notation.match(/d(\d+)/)[1]) : 20;
+                        const dieClass = `die d${sides}`;
+                        html += `
+                            <div class="${dieClass}">
+                                ${value}
+                                <div class="die-label">d${sides}</div>
+                            </div>
+                        `;
+                    });
+                } else if (rollData.roll !== undefined) {
+                    // Single d20 roll - determine class based on outcome
+                    let dieClass = 'die d20';
+                    if (rollData.isCritical) {
+                        dieClass += ' critical';
+                    } else if (rollData.isCriticalFail) {
+                        dieClass += ' critical-fail';
+                    } else if (dc !== null) {
+                        // Check success/failure for non-critical rolls
+                        if (rollData.total >= dc) {
+                            dieClass += ' success';
+                        } else {
+                            dieClass += ' failure';
+                        }
+                    }
+                    
+                    html += `
+                        <div class="${dieClass}">
+                            ${rollData.roll}
+                            <div class="die-label">d20</div>
+                        </div>
+                    `;
+                }
+
+                html += '</div>';
+
+                // Display result
+                let outcome = '';
+                if (dc !== null) {
+                    if (rollData.isCritical) {
+                        outcome = '<span class="roll-outcome critical-success">CRITICAL SUCCESS!</span>';
+                    } else if (rollData.isCriticalFail) {
+                        outcome = '<span class="roll-outcome critical-failure">CRITICAL FAILURE!</span>';
+                    } else if (rollData.total >= dc) {
+                        outcome = '<span class="roll-outcome success">SUCCESS</span>';
+                    } else {
+                        outcome = '<span class="roll-outcome failure">FAILURE</span>';
+                    }
+                }
+
+                const breakdownText = rollData.breakdown || 
+                    (rollData.rolls ? `${rollData.rolls.join(' + ')}${rollData.modifier !== 0 ? ` ${rollData.modifier >= 0 ? '+' : ''}${rollData.modifier}` : ''}` : '');
+
+                html += `
+                    <div class="roll-result">
+                        <div>
+                            <div class="roll-breakdown">${breakdownText}</div>
+                            <div class="roll-total">Total: ${rollData.total}</div>
+                        </div>
+                        ${outcome}
+                    </div>
+                `;
+
+                diceDiv.innerHTML = html;
+                output.appendChild(diceDiv);
+                output.scrollTop = output.scrollHeight;
+
+                return rollData.total;
+            }
+        };
+
+        // Parse roll request from AI
+        function parseRollRequest(rollText) {
+            try {
+                // Extract values from [ROLL: type=..., stat=..., dc=..., proficient=...]
+                const typeMatch = rollText.match(/type=([^,\]]+)/);
+                const statMatch = rollText.match(/stat=([^,\]]+)/);
+                const dcMatch = rollText.match(/dc=(\d+)/);
+                const proficientMatch = rollText.match(/proficient=(yes|no)/);
+
+                if (!typeMatch || !statMatch || !dcMatch) {
+                    return null;
+                }
+
+                return {
+                    type: typeMatch[1].trim(),
+                    stat: statMatch[1].trim().toLowerCase(),
+                    dc: parseInt(dcMatch[1]),
+                    proficient: proficientMatch ? proficientMatch[1] === 'yes' : false
+                };
+            } catch (error) {
+                console.error('Error parsing roll request:', error);
+                return null;
+            }
+        }
+
+        // Handle character sheet upload
+        function handleCharacterUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                let content = e.target.result;
+                
+                // Fix common encoding issues
+                content = content
+                    .replace(/â€™/g, "'")  // Fix smart apostrophe
+                    .replace(/â€"/g, "–")  // Fix en-dash
+                    .replace(/â€"/g, "—")  // Fix em-dash
+                    .replace(/â€œ/g, '"')  // Fix opening quote
+                    .replace(/â€/g, '"')   // Fix closing quote
+                    .replace(/Â/g, '')     // Remove spurious Â
+                    .replace(/�/g, "'")    // Fix replacement character apostrophe
+                    .replace(/'/g, "'")    // Normalize curly apostrophe
+                    .replace(/'/g, "'")    // Normalize other curly apostrophe
+                    .replace(/"/g, '"')    // Normalize opening quote
+                    .replace(/"/g, '"');   // Normalize closing quote
+                
+                // Try JSON first
+                try {
+                    const characterData = JSON.parse(content);
+                    showVerificationModal(characterData, 'json');
+                    return;
+                } catch (error) {
+                    // Not JSON, try text parsing
+                }
+                
+                // Parse as text
+                try {
+                    const characterData = parseTextCharacterSheet(content);
+                    showVerificationModal(characterData, 'text');
+                } catch (error) {
+                    alert('Error parsing character sheet: ' + error.message);
+                    console.error('Parse error:', error);
+                }
+            };
+            reader.readAsText(file);
+            
+            // Reset file input
+            event.target.value = '';
+        }
+
+        // Parse text-based character sheet
+        function parseTextCharacterSheet(text) {
+            const char = {
+                name: null,
+                class: null,
+                race: null,
+                level: 1,
+                background: null,
+                alignment: null,
+                abilities: {
+                    strength: 10,
+                    dexterity: 10,
+                    constitution: 10,
+                    intelligence: 10,
+                    wisdom: 10,
+                    charisma: 10
+                },
+                hitPoints: { current: 10, max: 10 },
+                armorClass: 10,
+                speed: 30,
+                proficiencyBonus: 2,
+                skills: [],
+                equipment: [],
+                features: []
+            };
+
+            const lines = text.split('\n');
+            
+            // Helper to find value after a header
+            function findValueAfterHeader(startIdx, maxLines = 3) {
+                for (let i = startIdx + 1; i < Math.min(startIdx + maxLines, lines.length); i++) {
+                    const line = lines[i].trim();
+                    // Skip lines that are just emojis or section markers
+                    if (line && !line.match(/^[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}??]/u)) {
+                        return line;
+                    }
+                }
+                return null;
+            }
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                const lowerLine = line.toLowerCase();
+
+                // NAME - First non-emoji line or line after "Name"
+                if (!char.name && lowerLine === 'name') {
+                    const nextLine = findValueAfterHeader(i);
+                    if (nextLine) {
+                        char.name = nextLine.split('(')[0].trim();
+                    }
+                }
+
+                // RACE - Line after "Race" header
+                if (lowerLine === 'race') {
+                    const nextLine = findValueAfterHeader(i);
+                    if (nextLine) {
+                        char.race = nextLine.split('\n')[0].trim();
+                    }
+                }
+
+                // CLASS - Look for "Ranger (Level 1)" pattern
+                if (lowerLine === 'class' || lowerLine.includes('class')) {
+                    const nextLine = findValueAfterHeader(i);
+                    if (nextLine) {
+                        const classMatch = nextLine.match(/([A-Za-z]+)\s*\(Level\s*(\d+)\)/i);
+                        if (classMatch) {
+                            char.class = classMatch[1];
+                            char.level = parseInt(classMatch[2]);
+                        } else if (nextLine.match(/^[A-Z][a-z]+$/)) {
+                            char.class = nextLine;
+                        }
+                    }
+                }
+
+                // BACKGROUND - Line after "Background" header
+                if (lowerLine.includes('background')) {
+                    const nextLine = findValueAfterHeader(i);
+                    if (nextLine) {
+                        char.background = nextLine.split('(')[0].split('–')[0].trim();
+                    }
+                }
+
+                // ALIGNMENT - Line after "Alignment" header
+                if (lowerLine.includes('alignment')) {
+                    const nextLine = findValueAfterHeader(i);
+                    if (nextLine) {
+                        char.alignment = nextLine;
+                    }
+                }
+
+                // ABILITY SCORES - Look for table format
+                if (lowerLine.includes('ability') && lowerLine.includes('score')) {
+                    // Skip header rows
+                    for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
+                        const abilityLine = lines[j].trim();
+                        
+                        // Match "Strength 14 +2" or "Strength	14	+2"
+                        const match = abilityLine.match(/(Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma)\s+(\d+)/i);
+                        if (match) {
+                            const ability = match[1].toLowerCase();
+                            char.abilities[ability] = parseInt(match[2]);
+                        }
+                    }
+                }
+
+                // HP - "HP: 13" format
+                if (line.match(/^HP:/i)) {
+                    const hpMatch = line.match(/HP:\s*(\d+)/i);
+                    if (hpMatch) {
+                        const hp = parseInt(hpMatch[1]);
+                        char.hitPoints.current = hp;
+                        char.hitPoints.max = hp;
+                    }
+                }
+
+                // AC - "AC: 15" format
+                if (line.match(/^AC:/i)) {
+                    const acMatch = line.match(/AC:\s*(\d+)/i);
+                    if (acMatch) {
+                        char.armorClass = parseInt(acMatch[1]);
+                    }
+                }
+
+                // SPEED - "Speed: 25 ft" format
+                if (line.match(/^Speed:/i)) {
+                    const speedMatch = line.match(/Speed:\s*(\d+)/i);
+                    if (speedMatch) {
+                        char.speed = parseInt(speedMatch[1]);
+                    }
+                }
+
+                // SKILLS - Look for Skills section
+                if (lowerLine === 'skills') {
+                    for (let j = i + 1; j < Math.min(i + 10, lines.length); j++) {
+                        const skillLine = lines[j].trim();
+                        
+                        // Stop at next section header or empty line or emoji section marker
+                        if (!skillLine || skillLine.match(/^[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}??]/u)) break;
+                        
+                        // Match "Perception (Ranger)" or "Athletics (Soldier)"
+                        const skillMatch = skillLine.match(/^([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s*\(/);
+                        if (skillMatch) {
+                            char.skills.push(skillMatch[1]);
+                        }
+                    }
+                }
+
+                // EQUIPMENT - Look for Combat & Equipment section
+                if (lowerLine.includes('combat') && lowerLine.includes('equipment')) {
+                    for (let j = i + 1; j < Math.min(i + 15, lines.length); j++) {
+                        const equipLine = lines[j].trim();
+                        
+                        // Stop at Attacks or next major section (indicated by emoji or certain keywords)
+                        if (equipLine.toLowerCase().startsWith('attacks') || 
+                            equipLine.match(/^[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u) ||
+                            equipLine.toLowerCase().includes('ranger features') ||
+                            equipLine.toLowerCase().includes('favored enemy')) break;
+                        
+                        // Match equipment items
+                        if (equipLine && !equipLine.includes(':') && equipLine.length > 3) {
+                            // Clean up and add
+                            const item = equipLine.split('(')[0].split('+')[0].trim();
+                            if (item.match(/^[A-Z]/) && !item.match(/^(A|An|The)\s/)) {
+                                char.equipment.push(item);
+                            }
+                        }
+                        
+                        // Also check for "Equipment:" line
+                        if (equipLine.toLowerCase().startsWith('equipment:')) {
+                            const items = equipLine.substring(equipLine.indexOf(':') + 1).split(',');
+                            items.forEach(item => {
+                                const cleaned = item.trim().split('(')[0].trim();
+                                if (cleaned) char.equipment.push(cleaned);
+                            });
+                        }
+                    }
+                }
+
+                // FEATURES - Ranger Features, etc.
+                if (lowerLine.includes('features') || lowerLine.includes('favored enemy') || 
+                    lowerLine.includes('natural explorer')) {
+                    const featureName = line.split('(')[0].trim();
+                    if (featureName && featureName.length > 3) {
+                        char.features.push(featureName);
+                    }
+                }
+            }
+
+            // Clean up equipment - remove duplicates and empty entries
+            char.equipment = [...new Set(char.equipment.filter(item => item && item.length > 2))];
+            
+            // Fix encoding issues in equipment names
+            char.equipment = char.equipment.map(item => 
+                item.replace(/�/g, "'")
+                    .replace(/'/g, "'")
+                    .replace(/â€™/g, "'")
+                    .replace(/Â/g, '')
+            );
+            
+            char.skills = [...new Set(char.skills)];
+            char.features = [...new Set(char.features)];
+
+            return char;
+        }
+
+        // Show verification modal
+        function showVerificationModal(characterData, sourceType) {
+            pendingCharacterData = characterData;
+            
+            const modal = document.getElementById('verificationModal');
+            const content = document.getElementById('verificationContent');
+            const status = document.getElementById('parseStatus');
+            
+            // Show parse status
+            status.style.display = 'block';
+            if (sourceType === 'json') {
+                status.className = 'parse-status success';
+                status.textContent = '✓ JSON file parsed successfully';
+            } else {
+                status.className = 'parse-status warning';
+                status.textContent = '⚠ Text parsed - please verify all fields are correct';
+            }
+            
+            // Build verification form
+            let html = '<div class="verification-grid">';
+            
+            const fields = [
+                { key: 'name', label: 'Name', type: 'text' },
+                { key: 'race', label: 'Race', type: 'text' },
+                { key: 'class', label: 'Class', type: 'text' },
+                { key: 'level', label: 'Level', type: 'number' },
+                { key: 'background', label: 'Background', type: 'text' },
+                { key: 'alignment', label: 'Alignment', type: 'text' }
+            ];
+            
+            fields.forEach(field => {
+                const value = characterData[field.key] || '';
+                html += `
+                    <div class="verification-label">${field.label}:</div>
+                    <div><input type="${field.type}" class="verification-input" 
+                         id="verify_${field.key}" value="${value}"></div>
+                `;
+            });
+            
+            html += '</div><div style="margin: 20px 0; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 5px;">';
+            html += '<div style="color: #f39c12; margin-bottom: 10px; font-weight: bold;">Ability Scores</div>';
+            html += '<div class="verification-grid">';
+            
+            const abilities = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
+            abilities.forEach(ability => {
+                const value = characterData.abilities?.[ability] || 10;
+                const label = ability.charAt(0).toUpperCase() + ability.slice(1);
+                html += `
+                    <div class="verification-label">${label}:</div>
+                    <div><input type="number" class="verification-input" 
+                         id="verify_${ability}" value="${value}" min="1" max="20"></div>
+                `;
+            });
+            
+            html += '</div></div><div class="verification-grid">';
+            
+            const statsFields = [
+                { key: 'hitPoints.max', label: 'Max HP', value: characterData.hitPoints?.max || 10 },
+                { key: 'armorClass', label: 'Armor Class', value: characterData.armorClass || 10 },
+                { key: 'speed', label: 'Speed (ft)', value: characterData.speed || 30 }
+            ];
+            
+            statsFields.forEach(field => {
+                html += `
+                    <div class="verification-label">${field.label}:</div>
+                    <div><input type="number" class="verification-input" 
+                         id="verify_${field.key.replace('.', '_')}" value="${field.value}"></div>
+                `;
+            });
+            
+            html += '</div>';
+            
+            // Show equipment and skills as read-only
+            if (characterData.equipment && characterData.equipment.length > 0) {
+                html += '<div style="margin-top: 15px;"><div class="verification-label">Equipment:</div>';
+                html += '<div style="color: #3498db; font-size: 0.85em;">' + 
+                        characterData.equipment.join(', ') + '</div></div>';
+            }
+            
+            if (characterData.skills && characterData.skills.length > 0) {
+                html += '<div style="margin-top: 10px;"><div class="verification-label">Skills:</div>';
+                html += '<div style="color: #3498db; font-size: 0.85em;">' + 
+                        characterData.skills.join(', ') + '</div></div>';
+            }
+            
+            content.innerHTML = html;
+            modal.style.display = 'block';
+        }
+
+        // Confirm character import
+        function confirmCharacterImport() {
+            if (!pendingCharacterData) return;
+            
+            // Update character data from form
+            pendingCharacterData.name = document.getElementById('verify_name').value;
+            pendingCharacterData.race = document.getElementById('verify_race').value;
+            pendingCharacterData.class = document.getElementById('verify_class').value;
+            pendingCharacterData.level = parseInt(document.getElementById('verify_level').value);
+            pendingCharacterData.background = document.getElementById('verify_background').value;
+            pendingCharacterData.alignment = document.getElementById('verify_alignment').value;
+            
+            // Update abilities
+            const abilities = ['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'];
+            abilities.forEach(ability => {
+                pendingCharacterData.abilities[ability] = parseInt(document.getElementById('verify_' + ability).value);
+            });
+            
+            // Update stats
+            pendingCharacterData.hitPoints.max = parseInt(document.getElementById('verify_hitPoints_max').value);
+            pendingCharacterData.hitPoints.current = pendingCharacterData.hitPoints.max;
+            pendingCharacterData.armorClass = parseInt(document.getElementById('verify_armorClass').value);
+            pendingCharacterData.speed = parseInt(document.getElementById('verify_speed').value);
+            
+            // Close modal and load character
+            document.getElementById('verificationModal').style.display = 'none';
+            loadCharacterSheet(pendingCharacterData);
+            pendingCharacterData = null;
+        }
+
+        // Cancel character import
+        function cancelCharacterImport() {
+            document.getElementById('verificationModal').style.display = 'none';
+            pendingCharacterData = null;
+        }
+
+        // Manual dice rolling
+        function showManualRollDialog() {
+            document.getElementById('diceRollModal').style.display = 'block';
+            updateRollOptions();
+        }
+
+        function closeDiceRollModal() {
+            document.getElementById('diceRollModal').style.display = 'none';
+        }
+
+        function updateRollOptions() {
+            const rollType = document.getElementById('rollType').value;
+            document.getElementById('customRollOptions').style.display = 
+                rollType === 'custom' || rollType === 'damage' ? 'block' : 'none';
+            document.getElementById('abilityRollOptions').style.display = 
+                rollType === 'ability' || rollType === 'attack' ? 'block' : 'none';
+
+            // Set default notation for damage rolls
+            if (rollType === 'damage') {
+                document.getElementById('diceNotation').placeholder = 'e.g., 1d8+2 (longsword damage)';
+            } else {
+                document.getElementById('diceNotation').placeholder = 'e.g., 2d6+3, 1d20, 3d8-2';
+            }
+        }
+
+        function performManualRoll() {
+            const rollType = document.getElementById('rollType').value;
+            const description = document.getElementById('rollDescription').value || 'Manual Roll';
+
+            let result;
+            let dc = null;
+
+            if (rollType === 'ability' || rollType === 'attack') {
+                // Ability check or attack roll
+                const ability = document.getElementById('abilitySelect').value;
+                const proficient = document.getElementById('proficientCheck').checked;
+                const dcValue = document.getElementById('dcInput').value;
+                dc = dcValue ? parseInt(dcValue) : null;
+
+                const abilityScore = gameState.character?.abilities?.[ability] || 10;
+                const proficiencyBonus = gameState.character?.proficiencyBonus || 2;
+
+                result = DiceRoller.abilityCheck(abilityScore, proficient, proficiencyBonus);
+                
+                const checkName = rollType === 'attack' ? 'Attack Roll' : 
+                    ability.charAt(0).toUpperCase() + ability.slice(1) + ' Check';
+                
+                closeDiceRollModal();
+                addToOutput('player', `> Rolling ${checkName}: ${description}`);
+                DiceRoller.displayRoll(result, checkName, dc);
+                
+            } else {
+                // Custom or damage roll
+                const notation = document.getElementById('diceNotation').value.trim();
+                if (!notation) {
+                    alert('Please enter a dice notation (e.g., 2d6+3)');
+                    return;
+                }
+
+                result = DiceRoller.rollNotation(notation);
+                if (!result) {
+                    alert('Invalid dice notation. Use format like: 2d6+3, 1d20, 3d8-2');
+                    return;
+                }
+
+                closeDiceRollModal();
+                addToOutput('player', `> Rolling ${notation}: ${description}`);
+                DiceRoller.displayRoll(result, description);
+            }
+
+            // Save the roll to game state
+            saveGame();
+        }
+
+        // Load character sheet data
+        function loadCharacterSheet(charData) {
+            console.log('loadCharacterSheet called for:', charData.name);
+            gameState.character = charData;
+            
+            // Check if we need intro - look for actual adventure content, not just system messages
+            const hasAdventureContent = gameState.narrativeLog.some(entry => 
+                entry.type === 'narrative' || 
+                (entry.type === 'system' && entry.message.includes('YOUR ADVENTURE BEGINS'))
+            );
+            
+            // Update game stats from character sheet
+            if (charData.level) gameState.level = charData.level;
+            if (charData.hitPoints) {
+                gameState.health = charData.hitPoints.current || charData.hitPoints.max || 100;
+            }
+            
+            // Parse gold from equipment if present
+            if (charData.equipment) {
+                const goldItem = charData.equipment.find(item => 
+                    item.toLowerCase().includes('gold') || item.toLowerCase().includes('gp')
+                );
+                if (goldItem) {
+                    const goldMatch = goldItem.match(/(\d+)/);
+                    if (goldMatch) gameState.gold = parseInt(goldMatch[1]);
+                }
+            }
+            
+            // Add equipment to inventory
+            if (charData.equipment) {
+                gameState.inventory = [...charData.equipment];
+            }
+            
+            // Display character sheet
+            displayCharacterSheet(charData);
+            updateStats();
+            saveGame();
+            
+            addToOutput('system', `Character sheet loaded: ${charData.name || 'Unknown'} the ${charData.class || 'Adventurer'}!`);
+            
+            // Hide character management buttons immediately - character is now set
+            console.log('Hiding character management buttons');
+            hideCharacterManagementButtons();
+            
+            // Generate intro if this is a new game (no adventure content yet)
+            if (!hasAdventureContent) {
+                console.log('Generating intro for new character');
+                generatePersonalizedIntro(charData);
+            } else {
+                console.log('Skipping intro - adventure already started');
+            }
+        }
+
+        // Display character sheet
+        function displayCharacterSheet(char) {
+            document.getElementById('characterSheet').style.display = 'block';
+            document.getElementById('clearCharBtn').style.display = 'inline-block';
+            
+            document.getElementById('charName').textContent = char.name || '-';
+            document.getElementById('charClass').textContent = char.class || '-';
+            document.getElementById('charRace').textContent = char.race || '-';
+            document.getElementById('charBackground').textContent = char.background || '-';
+            document.getElementById('charAC').textContent = char.armorClass || '-';
+            document.getElementById('charSpeed').textContent = char.speed ? char.speed + ' ft' : '-';
+            
+            if (char.abilities) {
+                document.getElementById('charStr').textContent = char.abilities.strength || 10;
+                document.getElementById('charDex').textContent = char.abilities.dexterity || 10;
+                document.getElementById('charCon').textContent = char.abilities.constitution || 10;
+                document.getElementById('charInt').textContent = char.abilities.intelligence || 10;
+                document.getElementById('charWis').textContent = char.abilities.wisdom || 10;
+                document.getElementById('charCha').textContent = char.abilities.charisma || 10;
+            }
+        }
+
+        // Toggle character sheet visibility
+        function toggleCharacterSheet() {
+            const content = document.getElementById('characterSheetContent');
+            const toggle = document.getElementById('charSheetToggle');
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                toggle.textContent = '▼ Hide';
+            } else {
+                content.style.display = 'none';
+                toggle.textContent = '▶ Show';
+            }
+        }
+
+        // Clear character sheet
+        function clearCharacterSheet() {
+            if (confirm('Remove character sheet? (Game progress will be preserved)')) {
+                gameState.character = null;
+                document.getElementById('characterSheet').style.display = 'none';
+                document.getElementById('clearCharBtn').style.display = 'none';
+                saveGame();
+                addToOutput('system', 'Character sheet cleared.');
+            }
+        }
+
+        // Save game state to slot
+        function saveGame() {
+            try {
+                // Auto-save to current slot or create new slot
+                if (!currentSaveSlot) {
+                    currentSaveSlot = 'slot_' + Date.now();
+                }
+                saveToSlot(currentSaveSlot);
+                console.log('Game saved to slot:', currentSaveSlot);
+            } catch (error) {
+                console.error('Failed to save game:', error);
+            }
+        }
+
+        // Load game state (deprecated - using slot system now)
+        function loadGame() {
+            // Check for legacy save
+            const legacySave = localStorage.getItem('forgottenRealmSave');
+            if (legacySave) {
+                try {
+                    const loadedState = JSON.parse(legacySave);
+                    Object.assign(gameState, loadedState);
+                    // Migrate to slot system
+                    currentSaveSlot = 'slot_legacy_' + Date.now();
+                    saveToSlot(currentSaveSlot);
+                    localStorage.removeItem('forgottenRealmSave');
+                    return true;
+                } catch (error) {
+                    console.error('Failed to load legacy save:', error);
+                }
+            }
+            return false;
+        }
+
+        // Reset game to start new adventure
+        // Reset game to start new adventure
+        function resetGame() {
+            console.log('Reset game button clicked - showing modal');
+            document.getElementById('newGameModal').style.display = 'block';
+        }
+
+        function closeNewGameModal() {
+            console.log('User cancelled reset');
+            document.getElementById('newGameModal').style.display = 'none';
+        }
+
+        function confirmResetGame() {
+            console.log('User confirmed reset');
+            document.getElementById('newGameModal').style.display = 'none';
+            
+            try {
+                // Clear localStorage
+                localStorage.removeItem('forgottenRealmSave');
+                console.log('LocalStorage cleared');
+                
+                // Clear game state
+                gameState.health = 100;
+                gameState.gold = 50;
+                gameState.experience = 0;
+                gameState.level = 1;
+                gameState.inventory = [];
+                gameState.location = 'village';
+                gameState.gameHistory = [];
+                gameState.narrativeLog = [];
+                gameState.character = null;
+                
+                // Clear UI
+                document.getElementById('gameOutput').innerHTML = '';
+                document.getElementById('characterSheet').style.display = 'none';
+                document.getElementById('clearCharBtn').style.display = 'none';
+                
+                // Update stats
+                updateStats();
+                
+                // Show character creation
+                addToOutput('system', '=== NEW GAME ===');
+                addToOutput('system', 'Welcome, brave adventurer, to The Forgotten Realm!');
+                showCharacterCreation();
+                
+                console.log('Game reset complete');
+            } catch (error) {
+                console.error('Error resetting game:', error);
+                alert('Error resetting game: ' + error.message + '\nThe page will reload instead.');
+                // Fallback to page reload if there's an error
+                localStorage.removeItem('forgottenRealmSave');
+                location.reload();
+            }
+        }
+
+        // Initialize game
+        function initGame() {
+            // Load API key first
+            loadApiKey();
+            
+            const hasLoadedGame = loadGame();
+            const slots = getSaveSlots();
+            
+            // If there's a legacy save or existing slots, check what to show
+            if (hasLoadedGame) {
+                // Migrated from legacy save
+                loadFromSlot(currentSaveSlot);
+            } else if (slots.length > 0) {
+                // Show home screen with save slots
+                showHomeScreen();
+            } else {
+                // Brand new player - go straight to character creation
+                addToOutput('system', 'Welcome, brave adventurer, to The Forgotten Realm!');
+                if (gameState.apiKey) {
+                    addToOutput('system', '✓ API key configured - AI features enabled');
+                } else {
+                    addToOutput('system', '⚠️ No API key configured - Click the ⚙️ gear icon (top right) to enter your key');
+                }
+                showCharacterCreation();
+            }
+            
+            document.getElementById('playerInput').focus();
+        }
+
+        // Add message to game output
+        function addToOutput(type, message) {
+            const output = document.getElementById('gameOutput');
+            const div = document.createElement('div');
+            div.className = type === 'system' ? 'system-message' : 
+                           type === 'player' ? 'player-action' : 'narrative';
+            div.textContent = message;
+            output.appendChild(div);
+            output.scrollTop = output.scrollHeight;
+            
+            // Save to narrative log (limit to last 20 entries to avoid storage issues)
+            gameState.narrativeLog.push({ type, message });
+            if (gameState.narrativeLog.length > 20) {
+                gameState.narrativeLog.shift();
+            }
+        }
+
+        // Update stats display
+        function updateStats() {
+            document.getElementById('health').textContent = gameState.health;
+            document.getElementById('gold').textContent = gameState.gold;
+            document.getElementById('experience').textContent = gameState.experience;
+            document.getElementById('level').textContent = gameState.level;
+        }
+
+        // Handle player action
+        async function submitAction() {
+            const input = document.getElementById('playerInput');
+            const action = input.value.trim();
+            
+            if (!action || isProcessing) return;
+            
+            isProcessing = true;
+            document.getElementById('submitBtn').disabled = true;
+            
+            // Display player action
+            addToOutput('player', '> ' + action);
+            input.value = '';
+            
+            // Add loading indicator
+            addToOutput('system', 'The story unfolds...');
+            
+            // Generate narrative response
+            await generateResponse(action);
+            
+            isProcessing = false;
+            document.getElementById('submitBtn').disabled = false;
+            input.focus();
+        }
+
+        // Generate AI narrative response
+        async function generateResponse(action) {
+            // Check if API key is configured
+            if (!checkApiKey()) {
+                const output = document.getElementById('gameOutput');
+                output.removeChild(output.lastChild);
+                return;
+            }
+
+            try {
+                // Build context from game history
+                const context = buildGameContext(action);
+                
+                const response = await fetch("https://api.anthropic.com/v1/messages", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "x-api-key": gameState.apiKey,
+                        "anthropic-version": "2023-06-01"
+                    },
+                    body: JSON.stringify({
+                        model: "claude-sonnet-4-20250514",
+                        max_tokens: 1000,
+                        messages: [
+                            {
+                                role: "user",
+                                content: context
+                            }
+                        ],
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                
+                // Remove loading message
+                const output = document.getElementById('gameOutput');
+                output.removeChild(output.lastChild);
+                
+                if (data.content && data.content[0]) {
+                    const narrativeText = data.content[0].text;
+                    
+                    // Check for dice roll requests
+                    const rollMatches = narrativeText.match(/\[ROLL:[^\]]+\]/g);
+                    let processedText = narrativeText;
+                    
+                    if (rollMatches) {
+                        for (const rollMatch of rollMatches) {
+                            // Parse the roll request
+                            const rollData = parseRollRequest(rollMatch);
+                            if (rollData) {
+                                // Perform the roll
+                                const abilityScore = gameState.character?.abilities?.[rollData.stat] || 10;
+                                const proficiencyBonus = gameState.character?.proficiencyBonus || 2;
+                                
+                                const result = DiceRoller.abilityCheck(
+                                    abilityScore,
+                                    rollData.proficient,
+                                    proficiencyBonus
+                                );
+                                
+                                // Display the roll
+                                DiceRoller.displayRoll(result, rollData.type, rollData.dc);
+                                
+                                // Store the result for the AI to reference
+                                const outcomeText = result.total >= rollData.dc ? 'SUCCESS' : 'FAILURE';
+                                if (result.isCritical) {
+                                    processedText = processedText.replace(rollMatch, 
+                                        `[ROLL RESULT: CRITICAL SUCCESS! (${result.total} vs DC ${rollData.dc})]`);
+                                } else if (result.isCriticalFail) {
+                                    processedText = processedText.replace(rollMatch, 
+                                        `[ROLL RESULT: CRITICAL FAILURE! (${result.total} vs DC ${rollData.dc})]`);
+                                } else {
+                                    processedText = processedText.replace(rollMatch, 
+                                        `[ROLL RESULT: ${outcomeText} (${result.total} vs DC ${rollData.dc})]`);
+                                }
+                            } else {
+                                processedText = processedText.replace(rollMatch, '');
+                            }
+                        }
+                    }
+                    
+                    // Remove all roll tags from display (both [ROLL:...] and [ROLL RESULT:...])
+                    processedText = processedText.replace(/\[ROLL[^\]]*\]/g, '');
+                    
+                    // Parse the response for game effects
+                    parseGameEffects(processedText);
+                    
+                    // Add to game history
+                    gameState.gameHistory.push({
+                        action: action,
+                        response: processedText
+                    });
+                    
+                    // Keep only last 5 interactions to manage context
+                    if (gameState.gameHistory.length > 5) {
+                        gameState.gameHistory.shift();
+                    }
+                    
+                    // Display the narrative
+                    addToOutput('narrative', processedText);
+                    
+                    // Save game after each action
+                    saveGame();
+                } else {
+                    addToOutput('system', 'The realm seems silent... Try another action.');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                const output = document.getElementById('gameOutput');
+                output.removeChild(output.lastChild);
+                addToOutput('system', 'An error occurred in the fabric of reality. Please try again.');
+            }
+        }
+
+        // Build context for AI
+        function buildGameContext(action) {
+            // Detect if this is a clarifying question vs an action
+            const isQuestion = action.toLowerCase().startsWith('q:') || 
+                             action.toLowerCase().startsWith('question:') ||
+                             action.toLowerCase().startsWith('ooc:') ||
+                             action.toLowerCase().startsWith('out of character:');
+            
+            // Clean the action if it has a question prefix
+            let cleanAction = action;
+            if (isQuestion) {
+                cleanAction = action.replace(/^(q:|question:|ooc:|out of character:)\s*/i, '').trim();
+            }
+            
+            let context = `You are the Game Master of "The Forgotten Realm," a text-based D&D adventure. Your narration style is inspired by Critical Role - immersive, atmospheric, and adaptive to the player's tone.
+
+GAME MASTER PERSONALITY:
+- Be descriptive and atmospheric, painting vivid scenes with sensory details
+- Adapt to the player's energy: if they're serious, match it; if they're funny, roll with it and have NPCs react naturally
+- Give NPCs distinct personalities - they can be exasperated, amused, sarcastic, dramatic, or confused by the player's choices
+- Balance drama with levity - serious plots can have humorous moments, and vice versa
+- Write in second person ("You..." addressing the player directly)
+- End responses with clear situations that prompt the next decision
+- Never use asterisks for actions or formatting - write in prose
+- Respect player agency - present consequences, but let them drive the story
+
+TONE GUIDELINES:
+- Descriptive but punchy - detail without being exhausting
+- Consequences matter, but failures should still be interesting/fun
+- NPCs are people, not quest dispensers - they have opinions, humor, and reactions
+- When the player cracks a joke, let the world respond naturally
+- Dramatic moments should feel earned, not forced
+- Keep the adventure moving - don't get bogged down in excessive description
+
+Current Game State:
+- Health: ${gameState.health}/100
+- Gold: ${gameState.gold}
+- Experience: ${gameState.experience}
+- Level: ${gameState.level}
+- Location: ${gameState.location}
+- Inventory: ${gameState.inventory.join(', ') || 'empty'}
+`;
+
+            // Add character sheet info if available
+            if (gameState.character) {
+                context += `
+Character: ${gameState.character.name || 'Adventurer'}
+- Class: ${gameState.character.class || 'Unknown'}
+- Race: ${gameState.character.race || 'Unknown'}
+- Background: ${gameState.character.background || 'Unknown'}
+- Abilities: STR ${gameState.character.abilities?.strength || 10}, DEX ${gameState.character.abilities?.dexterity || 10}, CON ${gameState.character.abilities?.constitution || 10}, INT ${gameState.character.abilities?.intelligence || 10}, WIS ${gameState.character.abilities?.wisdom || 10}, CHA ${gameState.character.abilities?.charisma || 10}
+- Skills: ${gameState.character.skills?.join(', ') || 'None'}
+- Features: ${gameState.character.features?.join(', ') || 'None'}
+
+Use the character's name (${gameState.character.name}) naturally in narration. Consider their class, race, and abilities when describing outcomes. A Ranger tracks differently than a Wizard. A Dwarf has different cultural context than an Elf.
+`;
+            }
+
+            context += `
+`;
+
+            // Add recent history
+            if (gameState.gameHistory.length > 0) {
+                context += "Recent events:\n";
+                const recentHistory = gameState.gameHistory.slice(-5); // Last 5 interactions
+                recentHistory.forEach(entry => {
+                    context += `Player: ${entry.action}\nNarrative: ${entry.response}\n\n`;
+                });
+            }
+
+            // Different instructions based on whether this is a question or action
+            if (isQuestion) {
+                context += `Player's out-of-character question: ${cleanAction}
+
+CLARIFICATION MODE:
+The player is asking for clarification about the current situation, NOT taking an action. They want information so they can make an informed decision.
+
+Instructions:
+1. Provide a SHORT, DIRECT answer to their question (1-3 sentences maximum)
+2. Be specific and factual - give numbers, names, distances, etc. when relevant
+3. Don't advance the story or describe new events
+4. Don't assume they're taking any action
+5. After answering, briefly remind them of their situation and ask "What do you do?"
+
+Example:
+Player asks: "How many enemies am I facing?"
+GM responds: "You count five bandits in total - three with bows positioned on the ridge, and two with swords advancing toward you. What do you do?"
+
+Answer their question directly and concisely:`;
+            } else {
+                context += `Player's current action: ${cleanAction}
+
+NARRATIVE INSTRUCTIONS:
+1. Create a vivid, 2-4 paragraph response that directly addresses the player's action
+2. Include sensory details - sights, sounds, smells that make the scene real
+3. Present consequences, discoveries, or new situations based on their choice
+4. If combat happens, describe it cinematically but include mechanical outcomes
+5. NPCs should have personality - dialogue should sound natural, not stilted
+6. Match the player's tone: serious actions get serious responses, jokes get reactions
+7. End with a clear situation or question that prompts their next move
+8. Keep the adventure moving - don't stall with endless exposition
+
+GAME EFFECTS:
+If the action results in changes to the game state, include them at the END of your response using this format:
+[GAME_EFFECTS: health=+10, gold=-5, experience=+25, item=Health Potion, location=Dark Forest]
+
+Only include effects that actually happened. Don't add effects speculatively.
+
+DICE ROLLING SYSTEM:
+When the player's action requires a check (skill check, saving throw, attack roll, etc.), you MUST include a dice roll instruction BEFORE describing the outcome.
+
+Format: [ROLL: type=<check_type>, stat=<ability>, dc=<difficulty>, proficient=<yes/no>]
+- type: "Attack Roll", "Strength Check", "Dexterity Saving Throw", "Perception Check", etc.
+- stat: strength/dexterity/constitution/intelligence/wisdom/charisma
+- dc: Difficulty Class (5=trivial, 10=easy, 15=moderate, 20=hard, 25=very hard, 30=nearly impossible)
+- proficient: yes/no (check if the character has proficiency in this skill)
+
+Example: "You attempt to scale the crumbling wall. [ROLL: type=Athletics Check, stat=strength, dc=15, proficient=no] You find solid handholds..."
+
+IMPORTANT: Include the [ROLL:...] tag BEFORE describing success or failure, so the dice can be rolled fairly. Don't assume the outcome - let the dice decide!
+
+Now, respond to the player's action with your best Critical Role-inspired narration!`;
+            }
+
+            return context;
+        }
+
+        // Parse and apply game effects from AI response
+        function parseGameEffects(text) {
+            const effectMatch = text.match(/\[GAME_EFFECTS:([^\]]+)\]/);
+            
+            if (effectMatch) {
+                const effects = effectMatch[1];
+                
+                // Parse health changes
+                const healthMatch = effects.match(/health=([+-]\d+)/);
+                if (healthMatch) {
+                    gameState.health = Math.max(0, Math.min(100, gameState.health + parseInt(healthMatch[1])));
+                }
+                
+                // Parse gold changes
+                const goldMatch = effects.match(/gold=([+-]\d+)/);
+                if (goldMatch) {
+                    gameState.gold = Math.max(0, gameState.gold + parseInt(goldMatch[1]));
+                }
+                
+                // Parse experience
+                const expMatch = effects.match(/experience=([+-]\d+)/);
+                if (expMatch) {
+                    gameState.experience += parseInt(expMatch[1]);
+                    // Level up check
+                    if (gameState.experience >= gameState.level * 100) {
+                        gameState.level++;
+                        gameState.health = 100;
+                        addToOutput('system', '🌟 Level Up! You are now level ' + gameState.level + '! Health restored!');
+                    }
+                }
+                
+                // Parse items
+                const itemMatch = effects.match(/item=([^,\]]+)/);
+                if (itemMatch) {
+                    gameState.inventory.push(itemMatch[1].trim());
+                    addToOutput('system', '📦 Acquired: ' + itemMatch[1].trim());
+                }
+                
+                // Parse location
+                const locationMatch = effects.match(/location=([^,\]]+)/);
+                if (locationMatch) {
+                    gameState.location = locationMatch[1].trim();
+                }
+                
+                updateStats();
+                
+                // Save game after stat changes
+                saveGame();
+                
+                // Check for game over
+                if (gameState.health <= 0) {
+                    addToOutput('system', '💀 You have fallen in battle. Your adventure ends here...');
+                    document.getElementById('submitBtn').disabled = true;
+                    document.getElementById('playerInput').disabled = true;
+                }
+            }
+        }
+
+        // Enter key support
+        document.getElementById('playerInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                submitAction();
+            }
+        });
+
+        // Start the game
+        initGame();
+        checkApiKey();
+    </script>
+</body>
+</html>
